@@ -22,3 +22,8 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
+cblproject in java/target/checkstyle-cachefile
+cblproject in java/target/checkstyle-checker.xml
+cblproject in java/target/checkstyle-result.xml
+cblproject in java/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst
+cblproject in java/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst
