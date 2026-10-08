@@ -8,12 +8,14 @@ import model.WorkoutSession;
 
 public class FileStorage {
 
-    private final String FILE_NAME = "workout_history.txt";
+    // Renamed to comply with Checkstyle standard
+    private final String fileName = "workout_history.txt";
 
     // Saves the completed session to a text file
     public void saveSession(WorkoutSession session) {
-        // The 'true' parameter in FileWriter means it appends to the file, instead of overwriting it
-        try (PrintWriter writer = new PrintWriter(new FileWriter(FILE_NAME, true))) {
+        // The 'true' parameter in FileWriter means it appends to the file, 
+        // instead of overwriting it
+        try (PrintWriter writer = new PrintWriter(new FileWriter(fileName, true))) {
             
             writer.println("=== Date: " + session.getDate() + " ===");
             
@@ -22,7 +24,7 @@ public class FileStorage {
             }
             
             writer.println("============================\n");
-            System.out.println("Session successfully saved to " + FILE_NAME);
+            System.out.println("Session successfully saved to " + fileName);
 
         } catch (IOException e) {
             System.out.println("Error: Could not save the workout session.");

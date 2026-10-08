@@ -16,11 +16,20 @@ public class ExerciseCatalog {
     }
 
     private void loadStandardExercises() {
-        categoryMap.put("Chest & Triceps", new ArrayList<>(Arrays.asList("Bench Press", "Push-ups", "Incline Dumbbell Press")));
-        categoryMap.put("Back & Biceps", new ArrayList<>(Arrays.asList("Deadlift", "Pull-ups", "Barbell Row", "Lat Pulldown")));
-        categoryMap.put("Legs", new ArrayList<>(Arrays.asList("Squat", "Leg Press", "Calf Raises", "Bulgarian Split Squat")));
-        categoryMap.put("Shoulders & Arms", new ArrayList<>(Arrays.asList("Overhead Press", "Lateral Raises", "Bicep Curls", "Tricep Extensions")));
-        categoryMap.put("Core", new ArrayList<>(Arrays.asList("Crunches", "Plank")));
+        categoryMap.put("Chest & Triceps", new ArrayList<>(Arrays.asList(
+                "Bench Press", "Push-ups", "Incline Dumbbell Press")));
+        
+        categoryMap.put("Back & Biceps", new ArrayList<>(Arrays.asList(
+                "Deadlift", "Pull-ups", "Barbell Row", "Lat Pulldown")));
+        
+        categoryMap.put("Legs", new ArrayList<>(Arrays.asList(
+                "Squat", "Leg Press", "Calf Raises", "Bulgarian Split Squat")));
+        
+        categoryMap.put("Shoulders & Arms", new ArrayList<>(Arrays.asList(
+                "Overhead Press", "Lateral Raises", "Bicep Curls", "Tricep Extensions")));
+        
+        categoryMap.put("Core", new ArrayList<>(Arrays.asList(
+                "Crunches", "Plank")));
 
         muscleMap.put("Bench Press", "Chest, Triceps, Shoulders");
         muscleMap.put("Push-ups", "Chest, Triceps, Core");

@@ -12,7 +12,6 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
-
 import model.ExerciseCatalog;
 import model.ExerciseSet;
 import model.WorkoutSession;
@@ -26,11 +25,11 @@ public class ExerciseEntryPanel extends JPanel {
     private JTextField weightField;
     private JTextField setsField;
     private JTextField repsField;
-    private JTextField dateField; // NEW: Field for the date
+    private JTextField dateField; 
     
     private ExerciseCatalog catalog;
-    private FileStorage fileStorage; // NEW: Reference to our saving logic
-    private ArrayList<ExerciseSet> pendingExercises; // NEW: Temporary list for the current session
+    private FileStorage fileStorage; 
+    private ArrayList<ExerciseSet> pendingExercises; 
 
     public ExerciseEntryPanel(ExerciseCatalog catalog) {
         this.catalog = catalog;
@@ -42,10 +41,8 @@ public class ExerciseEntryPanel extends JPanel {
     private void initUI() {
         setLayout(new java.awt.GridBagLayout());
 
-        // Changed to 7 rows to make room for the Date field
         JPanel formPanel = new JPanel(new GridLayout(7, 2, 5, 5));
 
-        // NEW: Date Row
         formPanel.add(new JLabel("Date (YYYY-MM-DD):"));
         dateField = new JTextField(10);
         formPanel.add(dateField);
@@ -78,10 +75,9 @@ public class ExerciseEntryPanel extends JPanel {
         repsField = new JTextField(10);
         formPanel.add(repsField);
 
-        // NEW: We now have three buttons
         JButton customButton = new JButton("Custom Exercise");
         JButton addButton = new JButton("Add to Session");
-        JButton saveButton = new JButton("Save Workout"); // Saves the file
+        JButton saveButton = new JButton("Save Workout"); 
 
         JPanel buttonPanel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.CENTER, 15, 0));
         buttonPanel.add(customButton);
@@ -121,31 +117,45 @@ public class ExerciseEntryPanel extends JPanel {
         customButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String name = JOptionPane.showInputDialog(ExerciseEntryPanel.this, "Enter custom exercise name:");
-                if (name == null || name.trim().isEmpty()) return; 
+                String name = JOptionPane.showInputDialog(ExerciseEntryPanel.this, 
+                        "Enter custom exercise name:");
+                
+                // Add curly brackets to comply with Checkstyle
+                if (name == null || name.trim().isEmpty()) {
+                    return; 
+                }
 
                 String category = (String) JOptionPane.showInputDialog(ExerciseEntryPanel.this, 
                         "Select Category for " + name + ":", "Category", 
                         JOptionPane.QUESTION_MESSAGE, null, 
                         catalog.getCategories(), catalog.getCategories()[0]);
-                if (category == null) return;
+                        
+                if (category == null) {
+                    return;
+                }
 
-                String muscles = JOptionPane.showInputDialog(ExerciseEntryPanel.this, "Enter target muscles for " + name + ":");
-                if (muscles == null || muscles.trim().isEmpty()) return;
+                String muscles = JOptionPane.showInputDialog(ExerciseEntryPanel.this, 
+                        "Enter target muscles for " + name + ":");
+                        
+                if (muscles == null || muscles.trim().isEmpty()) {
+                    return;
+                }
 
                 catalog.addCustomExercise(category, name, muscles);
 
                 String currentCategory = (String) categoryCombo.getSelectedItem();
                 if (currentCategory.equals(category)) {
-                    exerciseCombo.setModel(new DefaultComboBoxModel<>(catalog.getExercisesByCategory(category)));
+                    exerciseCombo.setModel(new DefaultComboBoxModel<>(
+                            catalog.getExercisesByCategory(category)));
                     exerciseCombo.setSelectedItem(name);
                 }
 
-                JOptionPane.showMessageDialog(ExerciseEntryPanel.this, name + " added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(ExerciseEntryPanel.this, 
+                        name + " added successfully!", "Success", 
+                        JOptionPane.INFORMATION_MESSAGE);
             }
         });
 
-        // REWRITTEN: Now creates an object instead of just printing to console
         addButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -155,53 +165,54 @@ public class ExerciseEntryPanel extends JPanel {
                     int sets = Integer.parseInt(setsField.getText());
                     int reps = Integer.parseInt(repsField.getText());
 
-                    // Create the backend object and store it temporarily
                     ExerciseSet newSet = new ExerciseSet(name, weight, sets, reps);
                     pendingExercises.add(newSet);
                     
                     JOptionPane.showMessageDialog(ExerciseEntryPanel.this, 
-                        name + " added to the current session list!", "Exercise Added", JOptionPane.INFORMATION_MESSAGE);
+                            name + " added to the current session list!", 
+                            "Exercise Added", JOptionPane.INFORMATION_MESSAGE);
 
-                    // Clear the fields for the next exercise
                     weightField.setText("");
                     setsField.setText("");
                     repsField.setText("");
 
                 } catch (NumberFormatException ex) {
                     JOptionPane.showMessageDialog(ExerciseEntryPanel.this, 
-                        "Please enter valid numbers for weight, sets and reps.", "Input Error", JOptionPane.ERROR_MESSAGE);
+                            "Please enter valid numbers for weight, sets and reps.", 
+                            "Input Error", JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
 
-        // NEW: Saves the list of objects to the text file
         saveButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 String date = dateField.getText();
                 
-                // Basic validation
                 if (date.trim().isEmpty()) {
-                    JOptionPane.showMessageDialog(ExerciseEntryPanel.this, "Please enter a date first.", "Missing Date", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(ExerciseEntryPanel.this, 
+                            "Please enter a date first.", 
+                            "Missing Date", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
                 if (pendingExercises.isEmpty()) {
-                    JOptionPane.showMessageDialog(ExerciseEntryPanel.this, "Your session is empty! Add exercises first.", "Empty Session", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(ExerciseEntryPanel.this, 
+                            "Your session is empty! Add exercises first.", 
+                            "Empty Session", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
 
-                // Compile the session
                 WorkoutSession session = new WorkoutSession(date);
                 for (ExerciseSet set : pendingExercises) {
                     session.addExercise(set);
                 }
 
-                // Send to storage
                 fileStorage.saveSession(session);
                 
-                JOptionPane.showMessageDialog(ExerciseEntryPanel.this, "Workout saved successfully to file!", "Workout Saved", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(ExerciseEntryPanel.this, 
+                        "Workout saved successfully to file!", 
+                        "Workout Saved", JOptionPane.INFORMATION_MESSAGE);
                 
-                // Clear everything for a fresh start
                 pendingExercises.clear();
                 dateField.setText("");
             }
