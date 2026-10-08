@@ -1,7 +1,7 @@
 import gui.ExerciseEntryPanel;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
-import model.ExerciseCatalog; // Import the catalog
+import model.ExerciseCatalog; 
 
 public class Cblproject {
 

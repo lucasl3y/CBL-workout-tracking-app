@@ -8,6 +8,7 @@ import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import model.ExerciseCatalog;
@@ -31,45 +32,41 @@ public class ExerciseEntryPanel extends JPanel {
     private void initUI() {
         setLayout(new java.awt.GridBagLayout());
 
-        // Changed to 6 rows to accommodate the new category dropdown
         JPanel formPanel = new JPanel(new GridLayout(6, 2, 5, 5));
 
-        // 1. Category Dropdown
         formPanel.add(new JLabel("Category:"));
         String[] categories = catalog.getCategories();
         categoryCombo = new JComboBox<>(categories);
         formPanel.add(categoryCombo);
 
-        // 2. Exercise Dropdown (Dependent on Category)
         formPanel.add(new JLabel("Exercise:"));
         String initialCategory = categories[0];
         exerciseCombo = new JComboBox<>(catalog.getExercisesByCategory(initialCategory));
         formPanel.add(exerciseCombo);
 
-        // 3. Target Muscles
         formPanel.add(new JLabel("Target Muscles:"));
         String initialExercise = (String) exerciseCombo.getSelectedItem();
         muscleLabel = new JLabel(catalog.getTargetMuscles(initialExercise));
         muscleLabel.setFont(new java.awt.Font("Dialog", java.awt.Font.ITALIC, 12));
         formPanel.add(muscleLabel);
 
-        // 4. Weight
         formPanel.add(new JLabel("Weight (kg):"));
         weightField = new JTextField(10);
         formPanel.add(weightField);
 
-        // 5. Sets
         formPanel.add(new JLabel("Sets:"));
         setsField = new JTextField(10);
         formPanel.add(setsField);
 
-        // 6. Reps
         formPanel.add(new JLabel("Reps per set:"));
         repsField = new JTextField(10);
         formPanel.add(repsField);
 
+        // NEW: Added two buttons next to each other using FlowLayout
+        JButton customButton = new JButton("Create Custom Exercise");
         JButton addButton = new JButton("Add to Session");
-        JPanel buttonPanel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.CENTER));
+        JPanel buttonPanel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.CENTER, 15, 0));
+        buttonPanel.add(customButton);
         buttonPanel.add(addButton);
 
         JPanel containerPanel = new JPanel(new BorderLayout(0, 20)); 
@@ -80,25 +77,18 @@ public class ExerciseEntryPanel extends JPanel {
 
         // --- Event Listeners ---
 
-        // When the category changes, update the exercise dropdown
         categoryCombo.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 String selectedCategory = (String) categoryCombo.getSelectedItem();
                 String[] newExercises = catalog.getExercisesByCategory(selectedCategory);
-                
-                // Replace the items in the second dropdown dynamically
                 exerciseCombo.setModel(new DefaultComboBoxModel<>(newExercises));
-                
-                // Auto-update the muscle label for the first exercise in the new category
                 if (newExercises.length > 0) {
-                    String firstNewExercise = newExercises[0];
-                    muscleLabel.setText(catalog.getTargetMuscles(firstNewExercise));
+                    muscleLabel.setText(catalog.getTargetMuscles(newExercises[0]));
                 }
             }
         });
 
-        // When the exercise changes, update the muscle label
         exerciseCombo.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -109,7 +99,39 @@ public class ExerciseEntryPanel extends JPanel {
             }
         });
 
-        // Button click
+        // NEW: Action listener for creating a custom exercise
+        customButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // Ask for the exercise name
+                String name = JOptionPane.showInputDialog(ExerciseEntryPanel.this, "Enter custom exercise name:");
+                if (name == null || name.trim().isEmpty()) return; // Cancel if empty
+
+                // Ask for the category via a dropdown popup
+                String category = (String) JOptionPane.showInputDialog(ExerciseEntryPanel.this, 
+                        "Select Category for " + name + ":", "Category", 
+                        JOptionPane.QUESTION_MESSAGE, null, 
+                        catalog.getCategories(), catalog.getCategories()[0]);
+                if (category == null) return;
+
+                // Ask for the target muscles
+                String muscles = JOptionPane.showInputDialog(ExerciseEntryPanel.this, "Enter target muscles for " + name + ":");
+                if (muscles == null || muscles.trim().isEmpty()) return;
+
+                // 1. Add to the logic (Catalog)
+                catalog.addCustomExercise(category, name, muscles);
+
+                // 2. Update the GUI directly so the new exercise is visible
+                String currentCategory = (String) categoryCombo.getSelectedItem();
+                if (currentCategory.equals(category)) {
+                    exerciseCombo.setModel(new DefaultComboBoxModel<>(catalog.getExercisesByCategory(category)));
+                    exerciseCombo.setSelectedItem(name);
+                }
+
+                JOptionPane.showMessageDialog(ExerciseEntryPanel.this, name + " added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+            }
+        });
+
         addButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
