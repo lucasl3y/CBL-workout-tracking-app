@@ -5,12 +5,15 @@ import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import model.ExerciseCatalog;
 import model.ExerciseSet;
@@ -26,6 +29,7 @@ public class ExerciseEntryPanel extends JPanel {
     private JTextField setsField;
     private JTextField repsField;
     private JTextField dateField; 
+    private JTextArea summaryArea; // NEW: The text area to show the live session
     
     private ExerciseCatalog catalog;
     private FileStorage fileStorage; 
@@ -39,8 +43,11 @@ public class ExerciseEntryPanel extends JPanel {
     }
 
     private void initUI() {
-        setLayout(new java.awt.GridBagLayout());
+        // Changed layout to BorderLayout with 20px padding between components
+        setLayout(new BorderLayout(20, 20));
+        setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
+        // --- LEFT SIDE: The Form ---
         JPanel formPanel = new JPanel(new GridLayout(7, 2, 5, 5));
 
         formPanel.add(new JLabel("Date (YYYY-MM-DD):"));
@@ -79,16 +86,27 @@ public class ExerciseEntryPanel extends JPanel {
         JButton addButton = new JButton("Add to Session");
         JButton saveButton = new JButton("Save Workout"); 
 
-        JPanel buttonPanel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.CENTER, 15, 0));
+        JPanel buttonPanel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.CENTER, 5, 0));
         buttonPanel.add(customButton);
         buttonPanel.add(addButton);
         buttonPanel.add(saveButton);
 
-        JPanel containerPanel = new JPanel(new BorderLayout(0, 20)); 
-        containerPanel.add(formPanel, BorderLayout.CENTER);
-        containerPanel.add(buttonPanel, BorderLayout.SOUTH);
+        JPanel leftContainer = new JPanel(new BorderLayout(0, 20)); 
+        leftContainer.add(formPanel, BorderLayout.CENTER);
+        leftContainer.add(buttonPanel, BorderLayout.SOUTH);
 
-        add(containerPanel);
+        // Add the entire form to the left side of the screen
+        add(leftContainer, BorderLayout.WEST);
+
+        // --- RIGHT SIDE: The Summary Area ---
+        summaryArea = new JTextArea(15, 35);
+        summaryArea.setEditable(false); // Users cannot type in this box
+        
+        JScrollPane scrollPane = new JScrollPane(summaryArea);
+        scrollPane.setBorder(BorderFactory.createTitledBorder("Current Workout Session"));
+        
+        // Add the scrolling text area to the center/right of the screen
+        add(scrollPane, BorderLayout.CENTER);
 
         // --- Event Listeners ---
 
@@ -120,7 +138,6 @@ public class ExerciseEntryPanel extends JPanel {
                 String name = JOptionPane.showInputDialog(ExerciseEntryPanel.this, 
                         "Enter custom exercise name:");
                 
-                // Add curly brackets to comply with Checkstyle
                 if (name == null || name.trim().isEmpty()) {
                     return; 
                 }
@@ -149,10 +166,6 @@ public class ExerciseEntryPanel extends JPanel {
                             catalog.getExercisesByCategory(category)));
                     exerciseCombo.setSelectedItem(name);
                 }
-
-                JOptionPane.showMessageDialog(ExerciseEntryPanel.this, 
-                        name + " added successfully!", "Success", 
-                        JOptionPane.INFORMATION_MESSAGE);
             }
         });
 
@@ -168,13 +181,13 @@ public class ExerciseEntryPanel extends JPanel {
                     ExerciseSet newSet = new ExerciseSet(name, weight, sets, reps);
                     pendingExercises.add(newSet);
                     
-                    JOptionPane.showMessageDialog(ExerciseEntryPanel.this, 
-                            name + " added to the current session list!", 
-                            "Exercise Added", JOptionPane.INFORMATION_MESSAGE);
+                    // UPDATE THE SCREEN
+                    updateSummaryArea();
 
                     weightField.setText("");
                     setsField.setText("");
                     repsField.setText("");
+                    weightField.requestFocus(); // Put cursor back for fast typing
 
                 } catch (NumberFormatException ex) {
                     JOptionPane.showMessageDialog(ExerciseEntryPanel.this, 
@@ -214,8 +227,27 @@ public class ExerciseEntryPanel extends JPanel {
                         "Workout Saved", JOptionPane.INFORMATION_MESSAGE);
                 
                 pendingExercises.clear();
+                updateSummaryArea(); // Clear the screen
                 dateField.setText("");
             }
         });
+    }
+
+    // NEW METHOD: Refreshes the text area based on the current list of exercises
+    private void updateSummaryArea() {
+        StringBuilder sb = new StringBuilder();
+        
+        if (pendingExercises.isEmpty()) {
+            summaryArea.setText("No exercises added yet.\nStart building your session on the left!");
+            return;
+        }
+
+        for (int i = 0; i < pendingExercises.size(); i++) {
+            ExerciseSet set = pendingExercises.get(i);
+            // Example: "1. Bench Press | Weight: 60.0kg | Sets: 3 | Reps: 10"
+            sb.append(i + 1).append(". ").append(set.toString()).append("\n");
+        }
+        
+        summaryArea.setText(sb.toString());
     }
 }
