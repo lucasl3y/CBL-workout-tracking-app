@@ -13,10 +13,12 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
+import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.table.DefaultTableModel;
 import model.ExerciseCatalog;
 import model.ExerciseSet;
+import model.TemplateManager;
 import model.WorkoutSession;
 import storage.FileStorage;
 
@@ -26,29 +28,31 @@ public class ExerciseEntryPanel extends JPanel {
     private JComboBox<String> exerciseCombo;
     private JLabel muscleLabel;
     private JTextField weightField;
-    private JTextField setsField;
+    // Removed setsField
     private JTextField repsField;
     private JTextField dateField; 
-    private JTextArea summaryArea; // NEW: The text area to show the live session
+    
+    private JTable sessionTable;
+    private DefaultTableModel tableModel;
     
     private ExerciseCatalog catalog;
     private FileStorage fileStorage; 
-    private ArrayList<ExerciseSet> pendingExercises; 
+    private TemplateManager templateManager; 
 
     public ExerciseEntryPanel(ExerciseCatalog catalog) {
         this.catalog = catalog;
         this.fileStorage = new FileStorage();
-        this.pendingExercises = new ArrayList<>();
+        this.templateManager = new TemplateManager();
         initUI();
     }
 
     private void initUI() {
-        // Changed layout to BorderLayout with 20px padding between components
         setLayout(new BorderLayout(20, 20));
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         // --- LEFT SIDE: The Form ---
-        JPanel formPanel = new JPanel(new GridLayout(7, 2, 5, 5));
+        // Reduced grid rows because we removed the "Sets" input field
+        JPanel formPanel = new JPanel(new GridLayout(6, 2, 5, 5));
 
         formPanel.add(new JLabel("Date (YYYY-MM-DD):"));
         dateField = new JTextField(10);
@@ -74,39 +78,49 @@ public class ExerciseEntryPanel extends JPanel {
         weightField = new JTextField(10);
         formPanel.add(weightField);
 
-        formPanel.add(new JLabel("Sets:"));
-        setsField = new JTextField(10);
-        formPanel.add(setsField);
-
-        formPanel.add(new JLabel("Reps per set:"));
+        formPanel.add(new JLabel("Reps for this set:"));
         repsField = new JTextField(10);
         formPanel.add(repsField);
 
         JButton customButton = new JButton("Custom Exercise");
-        JButton addButton = new JButton("Add to Session");
+        JButton addButton = new JButton("Add 1 Set");
         JButton saveButton = new JButton("Save Workout"); 
 
         JPanel buttonPanel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.CENTER, 5, 0));
         buttonPanel.add(customButton);
         buttonPanel.add(addButton);
         buttonPanel.add(saveButton);
+        
+        JPanel templatePanel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT));
+        templatePanel.setBorder(BorderFactory.createTitledBorder("Quick Load Templates"));
+        
+        JComboBox<String> templateCombo = new JComboBox<>(templateManager.getTemplateNames());
+        JButton loadTemplateButton = new JButton("Load");
+        templatePanel.add(templateCombo);
+        templatePanel.add(loadTemplateButton);
 
-        JPanel leftContainer = new JPanel(new BorderLayout(0, 20)); 
-        leftContainer.add(formPanel, BorderLayout.CENTER);
-        leftContainer.add(buttonPanel, BorderLayout.SOUTH);
+        JPanel leftContainer = new JPanel(new BorderLayout(0, 10)); 
+        leftContainer.add(templatePanel, BorderLayout.NORTH); 
+        leftContainer.add(formPanel, BorderLayout.CENTER);    
+        leftContainer.add(buttonPanel, BorderLayout.SOUTH);   
 
-        // Add the entire form to the left side of the screen
         add(leftContainer, BorderLayout.WEST);
 
-        // --- RIGHT SIDE: The Summary Area ---
-        summaryArea = new JTextArea(15, 35);
-        summaryArea.setEditable(false); // Users cannot type in this box
+        // --- RIGHT SIDE: The Interactive Table ---
+        String[] columnNames = {"Exercise", "Set", "Weight (kg)", "Reps"};
+        tableModel = new DefaultTableModel(columnNames, 0);
+        sessionTable = new JTable(tableModel);
         
-        JScrollPane scrollPane = new JScrollPane(summaryArea);
+        JScrollPane scrollPane = new JScrollPane(sessionTable);
         scrollPane.setBorder(BorderFactory.createTitledBorder("Current Workout Session"));
         
-        // Add the scrolling text area to the center/right of the screen
-        add(scrollPane, BorderLayout.CENTER);
+        // NEW: Delete button for the table
+        JButton deleteButton = new JButton("Delete Selected Row");
+        JPanel tableContainer = new JPanel(new BorderLayout(0, 10));
+        tableContainer.add(scrollPane, BorderLayout.CENTER);
+        tableContainer.add(deleteButton, BorderLayout.SOUTH);
+        
+        add(tableContainer, BorderLayout.CENTER);
 
         // --- Event Listeners ---
 
@@ -132,31 +146,45 @@ public class ExerciseEntryPanel extends JPanel {
             }
         });
 
+        loadTemplateButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String selected = (String) templateCombo.getSelectedItem();
+                if (selected == null || selected.equals("Select Template...")) {
+                    return; 
+                }
+                
+                ArrayList<ExerciseSet> templateSets = templateManager.getTemplate(selected);
+                
+                for (ExerciseSet set : templateSets) {
+                    tableModel.addRow(new Object[]{
+                        set.getExerciseName(), 
+                        set.getSetNumber(), 
+                        set.getWeight(), 
+                        set.getReps()
+                    });
+                }
+                
+                templateCombo.setSelectedIndex(0);
+            }
+        });
+
         customButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 String name = JOptionPane.showInputDialog(ExerciseEntryPanel.this, 
                         "Enter custom exercise name:");
-                
-                if (name == null || name.trim().isEmpty()) {
-                    return; 
-                }
+                if (name == null || name.trim().isEmpty()) return; 
 
                 String category = (String) JOptionPane.showInputDialog(ExerciseEntryPanel.this, 
                         "Select Category for " + name + ":", "Category", 
                         JOptionPane.QUESTION_MESSAGE, null, 
                         catalog.getCategories(), catalog.getCategories()[0]);
-                        
-                if (category == null) {
-                    return;
-                }
+                if (category == null) return;
 
                 String muscles = JOptionPane.showInputDialog(ExerciseEntryPanel.this, 
                         "Enter target muscles for " + name + ":");
-                        
-                if (muscles == null || muscles.trim().isEmpty()) {
-                    return;
-                }
+                if (muscles == null || muscles.trim().isEmpty()) return;
 
                 catalog.addCustomExercise(category, name, muscles);
 
@@ -175,24 +203,42 @@ public class ExerciseEntryPanel extends JPanel {
                 try {
                     String name = (String) exerciseCombo.getSelectedItem();
                     double weight = Double.parseDouble(weightField.getText());
-                    int sets = Integer.parseInt(setsField.getText());
                     int reps = Integer.parseInt(repsField.getText());
 
-                    ExerciseSet newSet = new ExerciseSet(name, weight, sets, reps);
-                    pendingExercises.add(newSet);
-                    
-                    // UPDATE THE SCREEN
-                    updateSummaryArea();
+                    // Calculate which set number this is by counting rows with the same exercise name
+                    int setNumber = 1;
+                    for (int i = 0; i < tableModel.getRowCount(); i++) {
+                        if (tableModel.getValueAt(i, 0).equals(name)) {
+                            setNumber++;
+                        }
+                    }
 
-                    weightField.setText("");
-                    setsField.setText("");
+                    // Add as a single set row
+                    tableModel.addRow(new Object[]{name, setNumber, weight, reps});
+
+                    // Only clear reps and keep weight so they can easily click 'Add' again for the next set
                     repsField.setText("");
-                    weightField.requestFocus(); // Put cursor back for fast typing
+                    repsField.requestFocus(); 
 
                 } catch (NumberFormatException ex) {
                     JOptionPane.showMessageDialog(ExerciseEntryPanel.this, 
-                            "Please enter valid numbers for weight, sets and reps.", 
+                            "Please enter valid numbers for weight and reps.", 
                             "Input Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        // NEW: Action for the Delete Button
+        deleteButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int selectedRow = sessionTable.getSelectedRow();
+                if (selectedRow != -1) {
+                    tableModel.removeRow(selectedRow);
+                } else {
+                    JOptionPane.showMessageDialog(ExerciseEntryPanel.this, 
+                            "Please select a row in the table first.", 
+                            "No Row Selected", JOptionPane.WARNING_MESSAGE);
                 }
             }
         });
@@ -200,6 +246,10 @@ public class ExerciseEntryPanel extends JPanel {
         saveButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                if (sessionTable.isEditing()) {
+                    sessionTable.getCellEditor().stopCellEditing();
+                }
+                
                 String date = dateField.getText();
                 
                 if (date.trim().isEmpty()) {
@@ -208,7 +258,7 @@ public class ExerciseEntryPanel extends JPanel {
                             "Missing Date", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
-                if (pendingExercises.isEmpty()) {
+                if (tableModel.getRowCount() == 0) {
                     JOptionPane.showMessageDialog(ExerciseEntryPanel.this, 
                             "Your session is empty! Add exercises first.", 
                             "Empty Session", JOptionPane.ERROR_MESSAGE);
@@ -216,8 +266,21 @@ public class ExerciseEntryPanel extends JPanel {
                 }
 
                 WorkoutSession session = new WorkoutSession(date);
-                for (ExerciseSet set : pendingExercises) {
-                    session.addExercise(set);
+                
+                try {
+                    for (int i = 0; i < tableModel.getRowCount(); i++) {
+                        String name = tableModel.getValueAt(i, 0).toString();
+                        int setNumber = Integer.parseInt(tableModel.getValueAt(i, 1).toString());
+                        double weight = Double.parseDouble(tableModel.getValueAt(i, 2).toString());
+                        int reps = Integer.parseInt(tableModel.getValueAt(i, 3).toString());
+                        
+                        session.addExercise(new ExerciseSet(name, setNumber, weight, reps));
+                    }
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(ExerciseEntryPanel.this, 
+                            "A table cell contains invalid text. Please fix it and try again.", 
+                            "Save Error", JOptionPane.ERROR_MESSAGE);
+                    return;
                 }
 
                 fileStorage.saveSession(session);
@@ -226,28 +289,9 @@ public class ExerciseEntryPanel extends JPanel {
                         "Workout saved successfully to file!", 
                         "Workout Saved", JOptionPane.INFORMATION_MESSAGE);
                 
-                pendingExercises.clear();
-                updateSummaryArea(); // Clear the screen
+                tableModel.setRowCount(0);
                 dateField.setText("");
             }
         });
-    }
-
-    // NEW METHOD: Refreshes the text area based on the current list of exercises
-    private void updateSummaryArea() {
-        StringBuilder sb = new StringBuilder();
-        
-        if (pendingExercises.isEmpty()) {
-            summaryArea.setText("No exercises added yet.\nStart building your session on the left!");
-            return;
-        }
-
-        for (int i = 0; i < pendingExercises.size(); i++) {
-            ExerciseSet set = pendingExercises.get(i);
-            // Example: "1. Bench Press | Weight: 60.0kg | Sets: 3 | Reps: 10"
-            sb.append(i + 1).append(". ").append(set.toString()).append("\n");
-        }
-        
-        summaryArea.setText(sb.toString());
     }
 }
