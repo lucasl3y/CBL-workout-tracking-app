@@ -3,20 +3,24 @@ package model;
 public class ExerciseSet {
     
     private String exerciseName;
+    private int setNumber; // Changed from total sets to specific set number
     private double weight;
-    private int sets;
     private int reps;
 
-    public ExerciseSet(String exerciseName, double weight, int sets, int reps) {
+    public ExerciseSet(String exerciseName, int setNumber, double weight, int reps) {
         this.exerciseName = exerciseName;
+        this.setNumber = setNumber;
         this.weight = weight;
-        this.sets = sets;
         this.reps = reps;
     }
 
-    // Converts the object data into a structured string for the text file
+    public String getExerciseName() { return exerciseName; }
+    public int getSetNumber() { return setNumber; }
+    public double getWeight() { return weight; }
+    public int getReps() { return reps; }
+
     @Override
     public String toString() {
-        return exerciseName + " | Weight: " + weight + "kg | Sets: " + sets + " | Reps: " + reps;
+        return exerciseName + " (Set " + setNumber + ") | Weight: " + weight + "kg | Reps: " + reps;
     }
 }
