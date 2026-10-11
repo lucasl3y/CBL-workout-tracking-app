@@ -15,6 +15,8 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableModel;
 import model.ExerciseCatalog;
 import model.ExerciseSet;
@@ -28,16 +30,18 @@ public class ExerciseEntryPanel extends JPanel {
     private JComboBox<String> exerciseCombo;
     private JLabel muscleLabel;
     private JTextField weightField;
-    // Removed setsField
     private JTextField repsField;
     private JTextField dateField; 
     
     private JTable sessionTable;
     private DefaultTableModel tableModel;
+    private JLabel volumeLabel; // NEW: Label to display the total session volume
     
     private ExerciseCatalog catalog;
     private FileStorage fileStorage; 
     private TemplateManager templateManager; 
+    
+    private boolean isTableUpdating = false;
 
     public ExerciseEntryPanel(ExerciseCatalog catalog) {
         this.catalog = catalog;
@@ -51,7 +55,6 @@ public class ExerciseEntryPanel extends JPanel {
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         // --- LEFT SIDE: The Form ---
-        // Reduced grid rows because we removed the "Sets" input field
         JPanel formPanel = new JPanel(new GridLayout(6, 2, 5, 5));
 
         formPanel.add(new JLabel("Date (YYYY-MM-DD):"));
@@ -114,15 +117,61 @@ public class ExerciseEntryPanel extends JPanel {
         JScrollPane scrollPane = new JScrollPane(sessionTable);
         scrollPane.setBorder(BorderFactory.createTitledBorder("Current Workout Session"));
         
-        // NEW: Delete button for the table
+        // NEW: Bottom panel for Delete Button AND Volume Counter
+        JPanel bottomTablePanel = new JPanel(new BorderLayout());
         JButton deleteButton = new JButton("Delete Selected Row");
+        
+        volumeLabel = new JLabel("Total Volume: 0.0 kg");
+        volumeLabel.setFont(new java.awt.Font("Dialog", java.awt.Font.BOLD, 14));
+        
+        bottomTablePanel.add(deleteButton, BorderLayout.WEST);
+        bottomTablePanel.add(volumeLabel, BorderLayout.EAST);
+        
         JPanel tableContainer = new JPanel(new BorderLayout(0, 10));
         tableContainer.add(scrollPane, BorderLayout.CENTER);
-        tableContainer.add(deleteButton, BorderLayout.SOUTH);
+        tableContainer.add(bottomTablePanel, BorderLayout.SOUTH);
         
         add(tableContainer, BorderLayout.CENTER);
 
         // --- Event Listeners ---
+
+        tableModel.addTableModelListener(new TableModelListener() {
+            @Override
+            public void tableChanged(TableModelEvent e) {
+                // If the safeguard is active, exit early to prevent a loop
+                if (isTableUpdating) return;
+
+                // Handle the auto-fill logic for user edits
+                if (e.getType() == TableModelEvent.UPDATE) {
+                    int row = e.getFirstRow();
+                    int col = e.getColumn();
+
+                    if (row >= 0 && (col == 2 || col == 3)) {
+                        isTableUpdating = true; 
+                        try {
+                            String exerciseName = (String) tableModel.getValueAt(row, 0);
+                            Object newValue = tableModel.getValueAt(row, col);
+
+                            for (int i = row + 1; i < tableModel.getRowCount(); i++) {
+                                String nextExercise = (String) tableModel.getValueAt(i, 0);
+                                if (exerciseName.equals(nextExercise)) {
+                                    tableModel.setValueAt(newValue, i, col);
+                                } else {
+                                    break; 
+                                }
+                            }
+                        } finally {
+                            isTableUpdating = false; 
+                        }
+                    }
+                }
+                
+                // Recalculate volume whenever the table changes
+                if (!isTableUpdating) {
+                    updateVolumeCounter();
+                }
+            }
+        });
 
         categoryCombo.addActionListener(new ActionListener() {
             @Override
@@ -166,6 +215,7 @@ public class ExerciseEntryPanel extends JPanel {
                 }
                 
                 templateCombo.setSelectedIndex(0);
+                // Volume gets updated automatically via TableModelListener
             }
         });
 
@@ -174,17 +224,26 @@ public class ExerciseEntryPanel extends JPanel {
             public void actionPerformed(ActionEvent e) {
                 String name = JOptionPane.showInputDialog(ExerciseEntryPanel.this, 
                         "Enter custom exercise name:");
-                if (name == null || name.trim().isEmpty()) return; 
+                
+                if (name == null || name.trim().isEmpty()) {
+                    return; 
+                }
 
                 String category = (String) JOptionPane.showInputDialog(ExerciseEntryPanel.this, 
                         "Select Category for " + name + ":", "Category", 
                         JOptionPane.QUESTION_MESSAGE, null, 
                         catalog.getCategories(), catalog.getCategories()[0]);
-                if (category == null) return;
+                        
+                if (category == null) {
+                    return;
+                }
 
                 String muscles = JOptionPane.showInputDialog(ExerciseEntryPanel.this, 
                         "Enter target muscles for " + name + ":");
-                if (muscles == null || muscles.trim().isEmpty()) return;
+                        
+                if (muscles == null || muscles.trim().isEmpty()) {
+                    return;
+                }
 
                 catalog.addCustomExercise(category, name, muscles);
 
@@ -205,7 +264,6 @@ public class ExerciseEntryPanel extends JPanel {
                     double weight = Double.parseDouble(weightField.getText());
                     int reps = Integer.parseInt(repsField.getText());
 
-                    // Calculate which set number this is by counting rows with the same exercise name
                     int setNumber = 1;
                     for (int i = 0; i < tableModel.getRowCount(); i++) {
                         if (tableModel.getValueAt(i, 0).equals(name)) {
@@ -213,13 +271,11 @@ public class ExerciseEntryPanel extends JPanel {
                         }
                     }
 
-                    // Add as a single set row
                     tableModel.addRow(new Object[]{name, setNumber, weight, reps});
 
-                    // Only clear reps and keep weight so they can easily click 'Add' again for the next set
                     repsField.setText("");
                     repsField.requestFocus(); 
-
+                    
                 } catch (NumberFormatException ex) {
                     JOptionPane.showMessageDialog(ExerciseEntryPanel.this, 
                             "Please enter valid numbers for weight and reps.", 
@@ -228,7 +284,6 @@ public class ExerciseEntryPanel extends JPanel {
             }
         });
 
-        // NEW: Action for the Delete Button
         deleteButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -291,7 +346,25 @@ public class ExerciseEntryPanel extends JPanel {
                 
                 tableModel.setRowCount(0);
                 dateField.setText("");
+                // Volume will reset to 0.0 because the table is cleared and the listener fires
             }
         });
+    }
+
+    // NEW METHOD: Calculates the total volume based on the current table data
+    private void updateVolumeCounter() {
+        double totalVolume = 0.0;
+        
+        for (int i = 0; i < tableModel.getRowCount(); i++) {
+            try {
+                double weight = Double.parseDouble(tableModel.getValueAt(i, 2).toString());
+                int reps = Integer.parseInt(tableModel.getValueAt(i, 3).toString());
+                totalVolume += (weight * reps);
+            } catch (NumberFormatException ex) {
+                // Ignore empty or invalid cells while the user is actively typing
+            }
+        }
+        
+        volumeLabel.setText(String.format("Total Volume: %.1f kg", totalVolume));
     }
 }
