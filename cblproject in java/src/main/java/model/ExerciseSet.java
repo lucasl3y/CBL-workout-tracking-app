@@ -3,7 +3,7 @@ package model;
 public class ExerciseSet {
     
     private String exerciseName;
-    private int setNumber; // Changed from total sets to specific set number
+    private int setNumber; 
     private double weight;
     private int reps;
 
@@ -14,10 +14,21 @@ public class ExerciseSet {
         this.reps = reps;
     }
 
-    public String getExerciseName() { return exerciseName; }
-    public int getSetNumber() { return setNumber; }
-    public double getWeight() { return weight; }
-    public int getReps() { return reps; }
+    public String getExerciseName() { 
+        return exerciseName; 
+    }
+    
+    public int getSetNumber() { 
+        return setNumber; 
+    }
+    
+    public double getWeight() { 
+        return weight; 
+    }
+    
+    public int getReps() { 
+        return reps; 
+    }
 
     @Override
     public String toString() {

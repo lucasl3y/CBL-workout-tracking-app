@@ -35,7 +35,7 @@ public class ExerciseEntryPanel extends JPanel {
     
     private JTable sessionTable;
     private DefaultTableModel tableModel;
-    private JLabel volumeLabel; // NEW: Label to display the total session volume
+    private JLabel volumeLabel; 
     
     private ExerciseCatalog catalog;
     private FileStorage fileStorage; 
@@ -54,7 +54,6 @@ public class ExerciseEntryPanel extends JPanel {
         setLayout(new BorderLayout(20, 20));
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        // --- LEFT SIDE: The Form ---
         JPanel formPanel = new JPanel(new GridLayout(6, 2, 5, 5));
 
         formPanel.add(new JLabel("Date (YYYY-MM-DD):"));
@@ -109,7 +108,6 @@ public class ExerciseEntryPanel extends JPanel {
 
         add(leftContainer, BorderLayout.WEST);
 
-        // --- RIGHT SIDE: The Interactive Table ---
         String[] columnNames = {"Exercise", "Set", "Weight (kg)", "Reps"};
         tableModel = new DefaultTableModel(columnNames, 0);
         sessionTable = new JTable(tableModel);
@@ -117,7 +115,6 @@ public class ExerciseEntryPanel extends JPanel {
         JScrollPane scrollPane = new JScrollPane(sessionTable);
         scrollPane.setBorder(BorderFactory.createTitledBorder("Current Workout Session"));
         
-        // NEW: Bottom panel for Delete Button AND Volume Counter
         JPanel bottomTablePanel = new JPanel(new BorderLayout());
         JButton deleteButton = new JButton("Delete Selected Row");
         
@@ -133,15 +130,11 @@ public class ExerciseEntryPanel extends JPanel {
         
         add(tableContainer, BorderLayout.CENTER);
 
-        // --- Event Listeners ---
-
         tableModel.addTableModelListener(new TableModelListener() {
             @Override
             public void tableChanged(TableModelEvent e) {
-                // If the safeguard is active, exit early to prevent a loop
                 if (isTableUpdating) return;
 
-                // Handle the auto-fill logic for user edits
                 if (e.getType() == TableModelEvent.UPDATE) {
                     int row = e.getFirstRow();
                     int col = e.getColumn();
@@ -166,7 +159,6 @@ public class ExerciseEntryPanel extends JPanel {
                     }
                 }
                 
-                // Recalculate volume whenever the table changes
                 if (!isTableUpdating) {
                     updateVolumeCounter();
                 }
@@ -215,7 +207,6 @@ public class ExerciseEntryPanel extends JPanel {
                 }
                 
                 templateCombo.setSelectedIndex(0);
-                // Volume gets updated automatically via TableModelListener
             }
         });
 
@@ -346,12 +337,10 @@ public class ExerciseEntryPanel extends JPanel {
                 
                 tableModel.setRowCount(0);
                 dateField.setText("");
-                // Volume will reset to 0.0 because the table is cleared and the listener fires
             }
         });
     }
 
-    // NEW METHOD: Calculates the total volume based on the current table data
     private void updateVolumeCounter() {
         double totalVolume = 0.0;
         

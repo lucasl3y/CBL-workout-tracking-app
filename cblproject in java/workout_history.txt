@@ -6,3 +6,18 @@ Overhead Press | Weight: 2.0kg | Sets: 23 | Reps: 3
 Overhead Press | Weight: 8.0kg | Sets: 7 | Reps: 3
 ============================
 
+=== Date: 2026-10-08 ===
+Deadlift (Set 1) | Weight: 12.0kg | Reps: 5
+Deadlift (Set 2) | Weight: 12.0kg | Reps: 5
+Deadlift (Set 3) | Weight: 19.0kg | Reps: 5
+Pull-ups (Set 1) | Weight: 3.0kg | Reps: 8
+Pull-ups (Set 2) | Weight: 4.0kg | Reps: 8
+Pull-ups (Set 3) | Weight: 4.0kg | Reps: 8
+Barbell Row (Set 1) | Weight: 4.0kg | Reps: 10
+Barbell Row (Set 2) | Weight: 6.0kg | Reps: 10
+Barbell Row (Set 3) | Weight: 7.0kg | Reps: 10
+Bicep Curls (Set 1) | Weight: 8.0kg | Reps: 12
+Bicep Curls (Set 2) | Weight: 9.0kg | Reps: 12
+Bicep Curls (Set 3) | Weight: 10.0kg | Reps: 12
+============================
+
