@@ -36,7 +36,6 @@ public class HistoryPanel extends JPanel {
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        // Top section: Month navigation
         JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
         JButton prevButton = new JButton("<< Previous");
         JButton nextButton = new JButton("Next >>");
@@ -51,11 +50,9 @@ public class HistoryPanel extends JPanel {
         headerPanel.add(refreshButton);
         add(headerPanel, BorderLayout.NORTH);
 
-        // Center section: Calendar Grid
         calendarGrid = new JPanel(new GridLayout(0, 7, 5, 5));
         add(calendarGrid, BorderLayout.CENTER);
 
-        // Event Listeners for navigation
         prevButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -75,15 +72,13 @@ public class HistoryPanel extends JPanel {
         refreshButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                updateCalendar(); // Reloads the file data
+                updateCalendar(); 
             }
         });
 
-        // Initial draw
         updateCalendar();
     }
 
-    // Re-draws the calendar based on the selected month and updated file data
     private void updateCalendar() {
         calendarGrid.removeAll();
         workoutHistory = fileStorage.loadHistory(); 
@@ -91,7 +86,6 @@ public class HistoryPanel extends JPanel {
         String monthName = currentMonth.getMonth().name();
         monthLabel.setText(monthName + " " + currentMonth.getYear());
 
-        // Add Day Headers
         String[] days = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
         for (String day : days) {
             JLabel label = new JLabel(day, JLabel.CENTER);
@@ -99,15 +93,13 @@ public class HistoryPanel extends JPanel {
             calendarGrid.add(label);
         }
 
-        // Calculate empty slots before the 1st of the month
         LocalDate firstOfMonth = currentMonth.atDay(1);
-        int dayOfWeek = firstOfMonth.getDayOfWeek().getValue(); // Monday = 1, Sunday = 7
+        int dayOfWeek = firstOfMonth.getDayOfWeek().getValue(); 
         
         for (int i = 1; i < dayOfWeek; i++) {
-            calendarGrid.add(new JLabel("")); // Empty filler
+            calendarGrid.add(new JLabel("")); 
         }
 
-        // Add the actual days as buttons
         int daysInMonth = currentMonth.lengthOfMonth();
         for (int i = 1; i <= daysInMonth; i++) {
             String dateString = String.format("%04d-%02d-%02d", 
@@ -115,22 +107,48 @@ public class HistoryPanel extends JPanel {
             
             JButton dayButton = new JButton(String.valueOf(i));
             
-            // Highlight days that have a workout logged
             if (workoutHistory.containsKey(dateString)) {
-                dayButton.setBackground(new Color(144, 238, 144)); // Light Green
+                dayButton.setBackground(new Color(144, 238, 144)); 
                 dayButton.setOpaque(true);
                 
                 dayButton.addActionListener(new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
                         String details = workoutHistory.get(dateString);
-                        JOptionPane.showMessageDialog(HistoryPanel.this, 
-                                details, "Workout on " + dateString, 
-                                JOptionPane.INFORMATION_MESSAGE);
+                        
+                        // NEW: Custom options for the popup dialog
+                        Object[] options = {"Close", "Delete Workout"};
+                        
+                        // Show dialog with a delete button instead of a standard OK button
+                        int choice = JOptionPane.showOptionDialog(HistoryPanel.this,
+                                details,
+                                "Workout on " + dateString,
+                                JOptionPane.YES_NO_OPTION,
+                                JOptionPane.INFORMATION_MESSAGE,
+                                null,
+                                options,
+                                options[0]);
+                                
+                        // If the user clicked "Delete Workout"
+                        if (choice == 1) {
+                            int confirm = JOptionPane.showConfirmDialog(HistoryPanel.this,
+                                    "Are you sure you want to delete the workout on " + dateString + "?\nThis action cannot be undone.",
+                                    "Confirm Deletion",
+                                    JOptionPane.YES_NO_OPTION,
+                                    JOptionPane.WARNING_MESSAGE);
+                                    
+                            if (confirm == JOptionPane.YES_OPTION) {
+                                fileStorage.deleteSession(dateString);
+                                updateCalendar(); // Refresh the grid to remove the green color
+                                JOptionPane.showMessageDialog(HistoryPanel.this, 
+                                        "Workout successfully deleted.", 
+                                        "Deleted", JOptionPane.INFORMATION_MESSAGE);
+                            }
+                        }
                     }
                 });
             } else {
-                dayButton.setEnabled(false); // No workout to click on
+                dayButton.setEnabled(false); 
             }
             
             calendarGrid.add(dayButton);

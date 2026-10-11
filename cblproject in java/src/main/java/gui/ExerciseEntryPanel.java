@@ -5,6 +5,8 @@ import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Locale; 
 import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
@@ -32,6 +34,7 @@ public class ExerciseEntryPanel extends JPanel {
     private JTextField weightField;
     private JTextField repsField;
     private JTextField dateField; 
+    private JTextField durationField; 
     
     private JTable sessionTable;
     private DefaultTableModel tableModel;
@@ -54,11 +57,15 @@ public class ExerciseEntryPanel extends JPanel {
         setLayout(new BorderLayout(20, 20));
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        JPanel formPanel = new JPanel(new GridLayout(6, 2, 5, 5));
+        JPanel formPanel = new JPanel(new GridLayout(7, 2, 5, 5));
 
         formPanel.add(new JLabel("Date (YYYY-MM-DD):"));
         dateField = new JTextField(10);
         formPanel.add(dateField);
+        
+        formPanel.add(new JLabel("Duration (minutes):"));
+        durationField = new JTextField(10);
+        formPanel.add(durationField);
 
         formPanel.add(new JLabel("Category:"));
         String[] categories = catalog.getCategories();
@@ -263,9 +270,6 @@ public class ExerciseEntryPanel extends JPanel {
                     }
 
                     tableModel.addRow(new Object[]{name, setNumber, weight, reps});
-
-                    repsField.setText("");
-                    repsField.requestFocus(); 
                     
                 } catch (NumberFormatException ex) {
                     JOptionPane.showMessageDialog(ExerciseEntryPanel.this, 
@@ -297,6 +301,7 @@ public class ExerciseEntryPanel extends JPanel {
                 }
                 
                 String date = dateField.getText();
+                String durationText = durationField.getText(); 
                 
                 if (date.trim().isEmpty()) {
                     JOptionPane.showMessageDialog(ExerciseEntryPanel.this, 
@@ -311,7 +316,30 @@ public class ExerciseEntryPanel extends JPanel {
                     return;
                 }
 
-                WorkoutSession session = new WorkoutSession(date);
+                int duration = 0;
+                try {
+                    duration = Integer.parseInt(durationText);
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(ExerciseEntryPanel.this, 
+                            "Please enter a valid whole number for duration (e.g. 60).", 
+                            "Input Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                HashSet<String> uniqueMuscles = new HashSet<>();
+                for (int i = 0; i < tableModel.getRowCount(); i++) {
+                    String exerciseName = tableModel.getValueAt(i, 0).toString();
+                    String muscles = catalog.getTargetMuscles(exerciseName);
+                    if (muscles != null && !muscles.isEmpty()) {
+                        String[] muscleArray = muscles.split(",\\s*");
+                        for (String m : muscleArray) {
+                            uniqueMuscles.add(m);
+                        }
+                    }
+                }
+                String trainedMuscles = String.join(", ", uniqueMuscles);
+
+                WorkoutSession session = new WorkoutSession(date, duration, trainedMuscles); 
                 
                 try {
                     for (int i = 0; i < tableModel.getRowCount(); i++) {
@@ -337,6 +365,7 @@ public class ExerciseEntryPanel extends JPanel {
                 
                 tableModel.setRowCount(0);
                 dateField.setText("");
+                durationField.setText(""); 
             }
         });
     }
@@ -350,10 +379,9 @@ public class ExerciseEntryPanel extends JPanel {
                 int reps = Integer.parseInt(tableModel.getValueAt(i, 3).toString());
                 totalVolume += (weight * reps);
             } catch (NumberFormatException ex) {
-                // Ignore empty or invalid cells while the user is actively typing
             }
         }
         
-        volumeLabel.setText(String.format("Total Volume: %.1f kg", totalVolume));
+        volumeLabel.setText(String.format(Locale.US, "Total Volume: %.1f kg", totalVolume));
     }
 }

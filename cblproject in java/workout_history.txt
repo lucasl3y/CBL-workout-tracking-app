@@ -21,3 +21,101 @@ Bicep Curls (Set 2) | Weight: 9.0kg | Reps: 12
 Bicep Curls (Set 3) | Weight: 10.0kg | Reps: 12
 ============================
 
+=== Date: 2026-10-11 ===
+Bench Press (Set 1) | Weight: 60.0kg | Reps: 8
+Bench Press (Set 2) | Weight: 60.0kg | Reps: 8
+Bench Press (Set 3) | Weight: 60.0kg | Reps: 8
+Incline Dumbbell Press (Set 1) | Weight: 30.0kg | Reps: 7
+Incline Dumbbell Press (Set 2) | Weight: 30.0kg | Reps: 7
+Incline Dumbbell Press (Set 3) | Weight: 30.0kg | Reps: 7
+Overhead Press (Set 1) | Weight: 24.0kg | Reps: 6
+Overhead Press (Set 2) | Weight: 24.0kg | Reps: 6
+Overhead Press (Set 3) | Weight: 24.0kg | Reps: 6
+Tricep Extensions (Set 1) | Weight: 45.0kg | Reps: 12
+Tricep Extensions (Set 2) | Weight: 45.0kg | Reps: 12
+Tricep Extensions (Set 3) | Weight: 45.0kg | Reps: 12
+============================
+
+=== Date: 2026-10-11 ===
+Duration: 24 minutes
+Squat (Set 1) | Weight: 200.0kg | Reps: 4
+Squat (Set 2) | Weight: 200.0kg | Reps: 4
+Squat (Set 3) | Weight: 200.0kg | Reps: 4
+Leg Press (Set 1) | Weight: 300.0kg | Reps: 8
+Leg Press (Set 2) | Weight: 300.0kg | Reps: 8
+Leg Press (Set 3) | Weight: 300.0kg | Reps: 8
+Bulgarian Split Squat (Set 1) | Weight: 45.0kg | Reps: 4
+Bulgarian Split Squat (Set 2) | Weight: 45.0kg | Reps: 4
+Bulgarian Split Squat (Set 3) | Weight: 45.0kg | Reps: 4
+Calf Raises (Set 1) | Weight: 20.0kg | Reps: 3
+Calf Raises (Set 2) | Weight: 20.0kg | Reps: 3
+Calf Raises (Set 3) | Weight: 20.0kg | Reps: 3
+Calf Raises (Set 4) | Weight: 20.0kg | Reps: 3
+============================
+
+=== Date: 2026-10-11 ===
+Duration: 12 minutes
+Squat (Set 1) | Weight: 21.0kg | Reps: 21
+Squat (Set 2) | Weight: 21.0kg | Reps: 8
+============================
+
+=== Date: 2026-11-10 ===
+Duration: 12 minutes
+Trained Muscles: Shoulders, Triceps
+Overhead Press (Set 1) | Weight: 12.0kg | Reps: 12
+Overhead Press (Set 2) | Weight: 12.0kg | Reps: 12
+Overhead Press (Set 3) | Weight: 12.0kg | Reps: 12
+Overhead Press (Set 4) | Weight: 12.0kg | Reps: 12
+Overhead Press (Set 5) | Weight: 12.0kg | Reps: 12
+Overhead Press (Set 6) | Weight: 12.0kg | Reps: 12
+Overhead Press (Set 7) | Weight: 12.0kg | Reps: 12
+Overhead Press (Set 8) | Weight: 12.0kg | Reps: 12
+Overhead Press (Set 9) | Weight: 12.0kg | Reps: 12
+Overhead Press (Set 10) | Weight: 12.0kg | Reps: 12
+Overhead Press (Set 11) | Weight: 12.0kg | Reps: 12
+Overhead Press (Set 12) | Weight: 12.0kg | Reps: 12
+Overhead Press (Set 13) | Weight: 12.0kg | Reps: 12
+============================
+
+
+=== Date: 2026-10-28 ===
+Duration: 1000 minutes
+Trained Muscles: Lats, Quadriceps, Chest, Hamstrings, Glutes, Upper Back, Lower Back, Shoulders, Calves, Upper Chest, Triceps, Biceps
+Bench Press (Set 1) | Weight: 1.0kg | Reps: 2
+Bench Press (Set 2) | Weight: 1.0kg | Reps: 2
+Bench Press (Set 3) | Weight: 1.0kg | Reps: 2
+Incline Dumbbell Press (Set 1) | Weight: 1.0kg | Reps: 2
+Incline Dumbbell Press (Set 2) | Weight: 1.0kg | Reps: 2
+Incline Dumbbell Press (Set 3) | Weight: 1.0kg | Reps: 2
+Overhead Press (Set 1) | Weight: 12.0kg | Reps: 2
+Overhead Press (Set 2) | Weight: 12.0kg | Reps: 2
+Overhead Press (Set 3) | Weight: 12.0kg | Reps: 2
+Tricep Extensions (Set 1) | Weight: 55.0kg | Reps: 3
+Tricep Extensions (Set 2) | Weight: 55.0kg | Reps: 3
+Tricep Extensions (Set 3) | Weight: 55.0kg | Reps: 3
+Deadlift (Set 1) | Weight: 1.0kg | Reps: 1
+Deadlift (Set 2) | Weight: 1.0kg | Reps: 1
+Deadlift (Set 3) | Weight: 1.0kg | Reps: 1
+Pull-ups (Set 1) | Weight: 12.0kg | Reps: 12
+Pull-ups (Set 2) | Weight: 12.0kg | Reps: 12
+Pull-ups (Set 3) | Weight: 12.0kg | Reps: 12
+Barbell Row (Set 1) | Weight: 12.0kg | Reps: 12
+Barbell Row (Set 2) | Weight: 12.0kg | Reps: 12
+Barbell Row (Set 3) | Weight: 12.0kg | Reps: 12
+Bicep Curls (Set 1) | Weight: 12.0kg | Reps: 12
+Bicep Curls (Set 2) | Weight: 12.0kg | Reps: 12
+Bicep Curls (Set 3) | Weight: 12.0kg | Reps: 12
+Squat (Set 1) | Weight: 12.0kg | Reps: 1
+Squat (Set 2) | Weight: 12.0kg | Reps: 1
+Squat (Set 3) | Weight: 12.0kg | Reps: 1
+Leg Press (Set 1) | Weight: 1.0kg | Reps: 1
+Leg Press (Set 2) | Weight: 1.0kg | Reps: 1
+Leg Press (Set 3) | Weight: 1.0kg | Reps: 1
+Bulgarian Split Squat (Set 1) | Weight: 1.0kg | Reps: 1
+Bulgarian Split Squat (Set 2) | Weight: 1.0kg | Reps: 1
+Bulgarian Split Squat (Set 3) | Weight: 1.0kg | Reps: 1
+Calf Raises (Set 1) | Weight: 1.0kg | Reps: 1
+Calf Raises (Set 2) | Weight: 1.0kg | Reps: 1
+Calf Raises (Set 3) | Weight: 1.0kg | Reps: 1
+============================
+
