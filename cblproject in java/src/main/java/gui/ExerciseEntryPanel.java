@@ -4,6 +4,7 @@ import java.awt.BorderLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Locale; 
@@ -33,7 +34,7 @@ public class ExerciseEntryPanel extends JPanel {
     private JLabel muscleLabel;
     private JTextField weightField;
     private JTextField repsField;
-    private JTextField dateField; 
+    private DatePickerField dateField;
     private JTextField durationField; 
     
     private JTable sessionTable;
@@ -59,8 +60,8 @@ public class ExerciseEntryPanel extends JPanel {
 
         JPanel formPanel = new JPanel(new GridLayout(7, 2, 5, 5));
 
-        formPanel.add(new JLabel("Date (YYYY-MM-DD):"));
-        dateField = new JTextField(10);
+        formPanel.add(new JLabel("Date:"));
+        dateField = new DatePickerField();
         formPanel.add(dateField);
         
         formPanel.add(new JLabel("Duration (minutes):"));
@@ -309,6 +310,15 @@ public class ExerciseEntryPanel extends JPanel {
                             "Missing Date", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
+                try {
+                    // Normalize the selected value before saving and validate the date format.
+                    date = LocalDate.parse(date.trim()).toString();
+                } catch (java.time.format.DateTimeParseException ex) {
+                    JOptionPane.showMessageDialog(ExerciseEntryPanel.this,
+                            "Enter the date in YYYY-MM-DD format.",
+                            "Invalid Date", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
                 if (tableModel.getRowCount() == 0) {
                     JOptionPane.showMessageDialog(ExerciseEntryPanel.this, 
                             "Your session is empty! Add exercises first.", 
@@ -322,6 +332,12 @@ public class ExerciseEntryPanel extends JPanel {
                 } catch (NumberFormatException ex) {
                     JOptionPane.showMessageDialog(ExerciseEntryPanel.this, 
                             "Please enter a valid whole number for duration (e.g. 60).", 
+                            "Input Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                if (duration < 0) {
+                    JOptionPane.showMessageDialog(ExerciseEntryPanel.this,
+                            "Duration cannot be negative.",
                             "Input Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
@@ -357,14 +373,18 @@ public class ExerciseEntryPanel extends JPanel {
                     return;
                 }
 
-                fileStorage.saveSession(session);
+                if (!fileStorage.saveSession(session)) {
+                    JOptionPane.showMessageDialog(ExerciseEntryPanel.this,
+                            "Workout could not be saved. Check file permissions and try again.",
+                            "Save Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
                 
                 JOptionPane.showMessageDialog(ExerciseEntryPanel.this, 
                         "Workout saved successfully to file!", 
                         "Workout Saved", JOptionPane.INFORMATION_MESSAGE);
                 
                 tableModel.setRowCount(0);
-                dateField.setText("");
                 durationField.setText(""); 
             }
         });

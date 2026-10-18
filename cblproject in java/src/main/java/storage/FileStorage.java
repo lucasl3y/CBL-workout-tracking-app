@@ -1,130 +1,193 @@
 package storage;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
+
+import constant.WorkoutFileFormat;
 import model.ExerciseSet;
 import model.WorkoutSession;
 
 public class FileStorage {
 
-    private final String fileName = "workout_history.txt";
-
-    public void saveSession(WorkoutSession session) {
-        try (PrintWriter writer = new PrintWriter(new FileWriter(fileName, true))) {
-            writer.println("=== Date: " + session.getDate() + " ===");
-            writer.println("Duration: " + session.getDuration() + " minutes");
-            writer.println("Trained Muscles: " + session.getTrainedMuscles()); // NEW: Save muscles
-            for (ExerciseSet exercise : session.getExercises()) {
-                writer.println(exercise.toString());
-            }
-            writer.println("============================\n");
-            System.out.println("Session successfully saved to " + fileName);
+    public boolean saveSession(WorkoutSession session) {
+        // New sessions include an ID so two workouts on the same date can be separated.
+        try (PrintWriter writer = new PrintWriter(
+                new FileWriter(WorkoutFileFormat.FILE_NAME, true))) {
+            WorkoutHistoryCodec.writeSession(writer, session);
+            writer.flush();
+            return !writer.checkError();
         } catch (IOException e) {
-            System.out.println("Error: Could not save the workout session.");
-            e.printStackTrace();
+            System.err.println("Could not save workout session: " + e.getMessage());
+            return false;
         }
+    }
+
+    public List<WorkoutSession> loadSessions() {
+        // Parse each delimited block into one complete workout session.
+        ArrayList<WorkoutSession> sessions = new ArrayList<>();
+        Path path = Path.of(WorkoutFileFormat.FILE_NAME);
+        if (!Files.exists(path)) {
+            return sessions;
+        }
+
+        try (BufferedReader reader = new BufferedReader(
+                new FileReader(WorkoutFileFormat.FILE_NAME))) {
+            ArrayList<String> block = new ArrayList<>();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (WorkoutHistoryCodec.isDateHeader(line)) {
+                    block.clear();
+                    block.add(line);
+                } else if (!block.isEmpty()) {
+                    if (line.startsWith(WorkoutFileFormat.SESSION_END)) {
+                        WorkoutHistoryCodec.addSession(block, sessions);
+                        block = new ArrayList<>();
+                    } else {
+                        block.add(line);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Could not read workout history: " + e.getMessage());
+        }
+        return sessions;
     }
 
     public HashMap<String, String> loadHistory() {
-        HashMap<String, String> history = new HashMap<>();
-        
-        try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
-            String line;
-            String currentDate = null;
-            StringBuilder sessionData = new StringBuilder();
-            double currentVolume = 0.0; 
-
-            while ((line = reader.readLine()) != null) {
-                if (line.startsWith("=== Date: ")) {
-                    currentDate = line.replace("=== Date: ", "").replace(" ===", "").trim();
-                    sessionData = new StringBuilder();
-                    currentVolume = 0.0; 
-                    
-                } else if (line.startsWith("============================")) {
-                    if (currentDate != null) {
-                        sessionData.append("\n----------------------------\n");
-                        sessionData.append(String.format(Locale.US, "Total Volume: %.1f kg\n", currentVolume));
-                        
-                        if (history.containsKey(currentDate)) {
-                            String existingData = history.get(currentDate);
-                            history.put(currentDate, existingData + "\n\n--- Additional Workout ---\n\n" + sessionData.toString());
-                        } else {
-                            history.put(currentDate, sessionData.toString());
-                        }
-                    }
-                    
-                } else if (!line.trim().isEmpty()) {
-                    sessionData.append(line).append("\n");
-                    
-                    if (line.contains("| Weight:") && line.contains("| Reps:")) {
-                        try {
-                            String[] parts = line.split("\\|");
-                            if (parts.length >= 3) {
-                                String weightStr = parts[1].replaceAll("[^0-9.]", "");
-                                String repsStr = parts[2].replaceAll("[^0-9]", "");
-                                
-                                if (!weightStr.isEmpty() && !repsStr.isEmpty()) {
-                                    double weight = Double.parseDouble(weightStr);
-                                    int reps = Integer.parseInt(repsStr);
-                                    currentVolume += (weight * reps);
-                                }
-                            }
-                        } catch (Exception ex) {
-                            // Ignore formatting errors for volume calculation
-                        }
-                    }
-                }
+        // The calendar uses a date-keyed view, while the Progress tab uses loadSessions().
+        HashMap<String, StringBuilder> grouped = new HashMap<>();
+        for (WorkoutSession session : loadSessions()) {
+            StringBuilder details = grouped.computeIfAbsent(session.getDate(), key -> new StringBuilder());
+            if (details.length() > 0) {
+                details.append("\n--- Additional Workout ---\n\n");
             }
-        } catch (IOException e) {
-            System.out.println("No history file found yet. Starting fresh.");
+            details.append("Duration: ").append(session.getDuration()).append(" minutes\n");
+            if (session.getTrainedMuscles() != null && !session.getTrainedMuscles().isEmpty()) {
+                details.append("Trained Muscles: ").append(session.getTrainedMuscles()).append("\n");
+            }
+            double volume = 0.0;
+            for (ExerciseSet set : session.getExercises()) {
+                details.append(set).append("\n");
+                volume += set.getWeight() * set.getReps();
+            }
+            details.append(String.format(Locale.US, "Total Volume: %.1f kg", volume));
         }
-        
+
+        HashMap<String, String> history = new HashMap<>();
+        for (String date : grouped.keySet()) {
+            history.put(date, grouped.get(date).toString());
+        }
         return history;
     }
 
-    public void deleteSession(String dateToRemove) {
-        File file = new File(fileName);
-        if (!file.exists()) {
-            return;
+    public boolean deleteSession(String sessionId) {
+        // Rewrite through a temporary file so a failed delete does not truncate the history.
+        Path path = Path.of(WorkoutFileFormat.FILE_NAME);
+        if (!Files.exists(path)) {
+            return false;
         }
-        
-        ArrayList<String> allLines = new ArrayList<>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                allLines.add(line);
+
+        try {
+            HistoryFile historyFile = parseHistoryFile(Files.readAllLines(path));
+            int targetIndex = findSessionIndex(historyFile.getSessionBlocks(), sessionId);
+            if (targetIndex == -1) {
+                return false;
             }
+            rewriteHistoryFile(path, historyFile, targetIndex);
+            return true;
         } catch (IOException e) {
-            System.out.println("Error reading file for deletion.");
-            e.printStackTrace();
-        }
-        
-        try (PrintWriter writer = new PrintWriter(new FileWriter(file, false))) {
-            boolean skipMode = false;
-            for (String line : allLines) {
-                
-                if (line.startsWith("=== Date: " + dateToRemove + " ===")) {
-                    skipMode = true; 
-                }
-                
-                if (!skipMode) {
-                    writer.println(line);
-                }
-                
-                if (skipMode && line.startsWith("============================")) {
-                    skipMode = false; 
-                }
-            }
-        } catch (IOException e) {
-            System.out.println("Error saving file after deletion.");
-            e.printStackTrace();
+            System.err.println("Could not delete workout session: " + e.getMessage());
+            return false;
         }
     }
+
+    private HistoryFile parseHistoryFile(List<String> lines) {
+        ArrayList<String> prefixLines = new ArrayList<>();
+        ArrayList<List<String>> sessionBlocks = new ArrayList<>();
+        ArrayList<String> currentBlock = null;
+        for (String line : lines) {
+            if (WorkoutHistoryCodec.isDateHeader(line)) {
+                currentBlock = new ArrayList<>();
+                currentBlock.add(line);
+                sessionBlocks.add(currentBlock);
+            } else if (currentBlock == null) {
+                prefixLines.add(line);
+            } else {
+                currentBlock.add(line);
+                if (line.startsWith(WorkoutFileFormat.SESSION_END)) {
+                    currentBlock = null;
+                }
+            }
+        }
+        return new HistoryFile(prefixLines, sessionBlocks);
+    }
+
+    private int findSessionIndex(List<List<String>> blocks, String sessionId) {
+        ArrayList<WorkoutSession> sessions = new ArrayList<>();
+        for (List<String> block : blocks) {
+            WorkoutHistoryCodec.addSession(block, sessions);
+        }
+        for (int i = 0; i < sessions.size(); i++) {
+            if (sessionId.equals(sessions.get(i).getSessionId())) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private void rewriteHistoryFile(Path path, HistoryFile historyFile, int excludedIndex)
+            throws IOException {
+        Path absolutePath = path.toAbsolutePath();
+        Path tempPath = Files.createTempFile(absolutePath.getParent(), "workout-history-", ".tmp");
+        try {
+            writeHistoryFile(tempPath, historyFile, excludedIndex);
+            replaceHistoryFile(tempPath, absolutePath);
+        } finally {
+            Files.deleteIfExists(tempPath);
+        }
+    }
+
+    private void writeHistoryFile(Path tempPath, HistoryFile historyFile, int excludedIndex)
+            throws IOException {
+        try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(tempPath))) {
+            writeLines(writer, historyFile.getPrefixLines());
+            List<List<String>> blocks = historyFile.getSessionBlocks();
+            for (int i = 0; i < blocks.size(); i++) {
+                if (i != excludedIndex) {
+                    writeLines(writer, blocks.get(i));
+                }
+            }
+            writer.flush();
+            if (writer.checkError()) {
+                throw new IOException("Failed while writing updated workout history");
+            }
+        }
+    }
+
+    private void writeLines(PrintWriter writer, List<String> lines) {
+        for (String line : lines) {
+            writer.println(line);
+        }
+    }
+
+    private void replaceHistoryFile(Path tempPath, Path path) throws IOException {
+        try {
+            Files.move(tempPath, path, StandardCopyOption.REPLACE_EXISTING,
+                    StandardCopyOption.ATOMIC_MOVE);
+        } catch (AtomicMoveNotSupportedException e) {
+            Files.move(tempPath, path, StandardCopyOption.REPLACE_EXISTING);
+        }
+    }
+
 }
