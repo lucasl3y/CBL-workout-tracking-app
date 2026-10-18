@@ -43,9 +43,7 @@ public class ExerciseEntryPanel extends JPanel {
     
     private ExerciseCatalog catalog;
     private FileStorage fileStorage; 
-    private TemplateManager templateManager; 
-    
-    private boolean isTableUpdating = false;
+    private TemplateManager templateManager;
 
     public ExerciseEntryPanel(ExerciseCatalog catalog) {
         this.catalog = catalog;
@@ -117,7 +115,62 @@ public class ExerciseEntryPanel extends JPanel {
         add(leftContainer, BorderLayout.WEST);
 
         String[] columnNames = {"Exercise", "Set", "Weight (kg)", "Reps"};
-        tableModel = new DefaultTableModel(columnNames, 0);
+        tableModel = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return column == 2 || column == 3;
+            }
+
+            @Override
+            public void setValueAt(Object value, int row, int column) {
+                if (column != 2 && column != 3) {
+                    return;
+                }
+
+                String text = value == null ? "" : value.toString().trim();
+
+                try {
+                    if (column == 2) {
+                        double weight = Double.parseDouble(text);
+
+                        if (!Double.isFinite(weight) || weight < 0) {
+                            JOptionPane.showMessageDialog(
+                                    ExerciseEntryPanel.this,
+                                    "Weight must be 0 or greater.",
+                                    "Invalid Weight",
+                                    JOptionPane.ERROR_MESSAGE);
+                            return;
+                        }
+
+                        super.setValueAt(weight, row, column);
+                    } else {
+                        int reps = Integer.parseInt(text);
+
+                        if (reps <= 0) {
+                            JOptionPane.showMessageDialog(
+                                    ExerciseEntryPanel.this,
+                                    "Reps must be a positive whole number.",
+                                    "Invalid Reps",
+                                    JOptionPane.ERROR_MESSAGE);
+                            return;
+                        }
+
+                        super.setValueAt(reps, row, column);
+                    }
+                } catch (NumberFormatException ex) {
+                    String message = column == 2
+                            ? "Weight must be 0 or greater."
+                            : "Reps must be a positive whole number.";
+
+                    JOptionPane.showMessageDialog(
+                            ExerciseEntryPanel.this,
+                            message,
+                            "Invalid Input",
+                            JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        };
+
         sessionTable = new JTable(tableModel);
         
         JScrollPane scrollPane = new JScrollPane(sessionTable);
@@ -141,35 +194,7 @@ public class ExerciseEntryPanel extends JPanel {
         tableModel.addTableModelListener(new TableModelListener() {
             @Override
             public void tableChanged(TableModelEvent e) {
-                if (isTableUpdating) return;
-
-                if (e.getType() == TableModelEvent.UPDATE) {
-                    int row = e.getFirstRow();
-                    int col = e.getColumn();
-
-                    if (row >= 0 && (col == 2 || col == 3)) {
-                        isTableUpdating = true; 
-                        try {
-                            String exerciseName = (String) tableModel.getValueAt(row, 0);
-                            Object newValue = tableModel.getValueAt(row, col);
-
-                            for (int i = row + 1; i < tableModel.getRowCount(); i++) {
-                                String nextExercise = (String) tableModel.getValueAt(i, 0);
-                                if (exerciseName.equals(nextExercise)) {
-                                    tableModel.setValueAt(newValue, i, col);
-                                } else {
-                                    break; 
-                                }
-                            }
-                        } finally {
-                            isTableUpdating = false; 
-                        }
-                    }
-                }
-                
-                if (!isTableUpdating) {
-                    updateVolumeCounter();
-                }
+                updateVolumeCounter();
             }
         });
 
@@ -310,8 +335,9 @@ public class ExerciseEntryPanel extends JPanel {
         saveButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if (sessionTable.isEditing()) {
-                    sessionTable.getCellEditor().stopCellEditing();
+                if (sessionTable.isEditing()
+                        && !sessionTable.getCellEditor().stopCellEditing()) {
+                    return;
                 }
                 
                 String date = dateField.getText();
