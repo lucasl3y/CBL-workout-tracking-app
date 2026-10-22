@@ -290,14 +290,20 @@ public class ExerciseEntryPanel extends JPanel {
             return;
         }
 
+        name = name.trim();
+        muscles = muscles.trim();
         catalog.addCustomExercise(category, name, muscles);
 
-        String currentCategory = (String) categoryCombo.getSelectedItem();
-        if (currentCategory.equals(category)) {
-            exerciseCombo.setModel(new DefaultComboBoxModel<>(
-                    catalog.getExercisesByCategory(category)));
-            exerciseCombo.setSelectedItem(name);
-        }
+        // Switch to the chosen category and select the newly created exercise.
+        categoryCombo.setSelectedItem(category);
+        exerciseCombo.setModel(new DefaultComboBoxModel<>(
+                catalog.getExercisesByCategory(category)));
+        exerciseCombo.setSelectedItem(name);
+        muscleLabel.setText(catalog.getTargetMuscles(name));
+
+        JOptionPane.showMessageDialog(this,
+                "Custom exercise added. Enter weight and reps, then click Add 1 Set.",
+                "Exercise Added", JOptionPane.INFORMATION_MESSAGE);
     }
 
     /**
