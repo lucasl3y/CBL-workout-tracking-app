@@ -7,9 +7,14 @@ import javax.swing.SwingUtilities;
 import model.ExerciseCatalog;
 import storage.FileStorage;
 
-public class Cblproject {
+/**
+ * Starts the workout tracker and assembles its main window and tabs.
+ */
+public class WorkoutTrackerApp {
 
     public static void main(String[] args) {
+
+        // Create and initialize Swing components on the Event Dispatch Thread.
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {

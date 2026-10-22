@@ -65,7 +65,7 @@ public class FileStorage {
     }
 
     public HashMap<String, String> loadHistory() {
-        // The calendar uses a date-keyed view, while the Progress tab uses loadSessions().
+        // Build a date-grouped text summary from the saved workout sessions.
         HashMap<String, StringBuilder> grouped = new HashMap<>();
         for (WorkoutSession session : loadSessions()) {
             StringBuilder details = grouped.computeIfAbsent(session.getDate(), key -> new StringBuilder());

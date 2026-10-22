@@ -2,6 +2,9 @@ package model;
 
 import java.util.ArrayList;
 
+/**
+ * Creates predefined workout templates with fresh exercise sets on each request.
+ */
 public class TemplateManager {
 
     public ArrayList<ExerciseSet> getTemplate(String templateName) {
@@ -26,8 +29,8 @@ public class TemplateManager {
 
         return templateExercises;
     }
-    
-    // Reps parameter removed, everything defaults to 0
+
+    // Template sets start with zero weight and reps; users complete them before saving.
     private void addSets(ArrayList<ExerciseSet> list, String name, int totalSets) {
         for (int i = 1; i <= totalSets; i++) {
             list.add(new ExerciseSet(name, i, 0.0, 0)); 
