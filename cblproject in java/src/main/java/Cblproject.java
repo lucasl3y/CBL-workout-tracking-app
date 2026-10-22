@@ -1,5 +1,6 @@
 import gui.ExerciseEntryPanel;
 import gui.HistoryPanel;
+import gui.ProgressPanel;
 import javax.swing.JFrame;
 import javax.swing.JTabbedPane;
 import javax.swing.SwingUtilities;
@@ -24,9 +25,19 @@ public class Cblproject {
 
                 ExerciseEntryPanel entryPanel = new ExerciseEntryPanel(catalog);
                 HistoryPanel historyPanel = new HistoryPanel(storage);
+                ProgressPanel progressPanel = new ProgressPanel(storage);
 
                 tabbedPane.addTab("Log Workout", entryPanel);
                 tabbedPane.addTab("Attendance History", historyPanel);
+                tabbedPane.addTab("Progress", progressPanel);
+                // Refresh data-backed tabs whenever the user returns to them.
+                tabbedPane.addChangeListener(e -> {
+                    if (tabbedPane.getSelectedComponent() == historyPanel) {
+                        historyPanel.refresh();
+                    } else if (tabbedPane.getSelectedComponent() == progressPanel) {
+                        progressPanel.refresh();
+                    }
+                });
 
                 frame.add(tabbedPane);
                 frame.setVisible(true);

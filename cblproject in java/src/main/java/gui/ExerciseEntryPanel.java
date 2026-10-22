@@ -4,6 +4,7 @@ import java.awt.BorderLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Locale; 
@@ -33,7 +34,7 @@ public class ExerciseEntryPanel extends JPanel {
     private JLabel muscleLabel;
     private JTextField weightField;
     private JTextField repsField;
-    private JTextField dateField; 
+    private DatePickerField dateField;
     private JTextField durationField; 
     
     private JTable sessionTable;
@@ -42,9 +43,7 @@ public class ExerciseEntryPanel extends JPanel {
     
     private ExerciseCatalog catalog;
     private FileStorage fileStorage; 
-    private TemplateManager templateManager; 
-    
-    private boolean isTableUpdating = false;
+    private TemplateManager templateManager;
 
     public ExerciseEntryPanel(ExerciseCatalog catalog) {
         this.catalog = catalog;
@@ -59,8 +58,8 @@ public class ExerciseEntryPanel extends JPanel {
 
         JPanel formPanel = new JPanel(new GridLayout(7, 2, 5, 5));
 
-        formPanel.add(new JLabel("Date (YYYY-MM-DD):"));
-        dateField = new JTextField(10);
+        formPanel.add(new JLabel("Date:"));
+        dateField = new DatePickerField();
         formPanel.add(dateField);
         
         formPanel.add(new JLabel("Duration (minutes):"));
@@ -116,7 +115,62 @@ public class ExerciseEntryPanel extends JPanel {
         add(leftContainer, BorderLayout.WEST);
 
         String[] columnNames = {"Exercise", "Set", "Weight (kg)", "Reps"};
-        tableModel = new DefaultTableModel(columnNames, 0);
+        tableModel = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return column == 2 || column == 3;
+            }
+
+            @Override
+            public void setValueAt(Object value, int row, int column) {
+                if (column != 2 && column != 3) {
+                    return;
+                }
+
+                String text = value == null ? "" : value.toString().trim();
+
+                try {
+                    if (column == 2) {
+                        double weight = Double.parseDouble(text);
+
+                        if (!Double.isFinite(weight) || weight < 0) {
+                            JOptionPane.showMessageDialog(
+                                    ExerciseEntryPanel.this,
+                                    "Weight must be 0 or greater.",
+                                    "Invalid Weight",
+                                    JOptionPane.ERROR_MESSAGE);
+                            return;
+                        }
+
+                        super.setValueAt(weight, row, column);
+                    } else {
+                        int reps = Integer.parseInt(text);
+
+                        if (reps <= 0) {
+                            JOptionPane.showMessageDialog(
+                                    ExerciseEntryPanel.this,
+                                    "Reps must be a positive whole number.",
+                                    "Invalid Reps",
+                                    JOptionPane.ERROR_MESSAGE);
+                            return;
+                        }
+
+                        super.setValueAt(reps, row, column);
+                    }
+                } catch (NumberFormatException ex) {
+                    String message = column == 2
+                            ? "Weight must be 0 or greater."
+                            : "Reps must be a positive whole number.";
+
+                    JOptionPane.showMessageDialog(
+                            ExerciseEntryPanel.this,
+                            message,
+                            "Invalid Input",
+                            JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        };
+
         sessionTable = new JTable(tableModel);
         
         JScrollPane scrollPane = new JScrollPane(sessionTable);
@@ -140,35 +194,7 @@ public class ExerciseEntryPanel extends JPanel {
         tableModel.addTableModelListener(new TableModelListener() {
             @Override
             public void tableChanged(TableModelEvent e) {
-                if (isTableUpdating) return;
-
-                if (e.getType() == TableModelEvent.UPDATE) {
-                    int row = e.getFirstRow();
-                    int col = e.getColumn();
-
-                    if (row >= 0 && (col == 2 || col == 3)) {
-                        isTableUpdating = true; 
-                        try {
-                            String exerciseName = (String) tableModel.getValueAt(row, 0);
-                            Object newValue = tableModel.getValueAt(row, col);
-
-                            for (int i = row + 1; i < tableModel.getRowCount(); i++) {
-                                String nextExercise = (String) tableModel.getValueAt(i, 0);
-                                if (exerciseName.equals(nextExercise)) {
-                                    tableModel.setValueAt(newValue, i, col);
-                                } else {
-                                    break; 
-                                }
-                            }
-                        } finally {
-                            isTableUpdating = false; 
-                        }
-                    }
-                }
-                
-                if (!isTableUpdating) {
-                    updateVolumeCounter();
-                }
+                updateVolumeCounter();
             }
         });
 
@@ -262,6 +288,16 @@ public class ExerciseEntryPanel extends JPanel {
                     double weight = Double.parseDouble(weightField.getText());
                     int reps = Integer.parseInt(repsField.getText());
 
+                    if (!Double.isFinite(weight) || weight < 0 || reps <= 0) {
+                        JOptionPane.showMessageDialog(
+                                ExerciseEntryPanel.this,
+                                "Weight must be 0 or greater.\n"
+                                        + "Reps must be a positive whole number.",
+                                "Input Error",
+                                JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+
                     int setNumber = 1;
                     for (int i = 0; i < tableModel.getRowCount(); i++) {
                         if (tableModel.getValueAt(i, 0).equals(name)) {
@@ -270,11 +306,14 @@ public class ExerciseEntryPanel extends JPanel {
                     }
 
                     tableModel.addRow(new Object[]{name, setNumber, weight, reps});
-                    
+
                 } catch (NumberFormatException ex) {
-                    JOptionPane.showMessageDialog(ExerciseEntryPanel.this, 
-                            "Please enter valid numbers for weight and reps.", 
-                            "Input Error", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(
+                            ExerciseEntryPanel.this,
+                            "Weight must be 0 or greater.\n"
+                                    + "Reps must be a positive whole number.",
+                            "Input Error",
+                            JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
@@ -296,8 +335,9 @@ public class ExerciseEntryPanel extends JPanel {
         saveButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if (sessionTable.isEditing()) {
-                    sessionTable.getCellEditor().stopCellEditing();
+                if (sessionTable.isEditing()
+                        && !sessionTable.getCellEditor().stopCellEditing()) {
+                    return;
                 }
                 
                 String date = dateField.getText();
@@ -309,6 +349,15 @@ public class ExerciseEntryPanel extends JPanel {
                             "Missing Date", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
+                try {
+                    // Normalize the selected value before saving and validate the date format.
+                    date = LocalDate.parse(date.trim()).toString();
+                } catch (java.time.format.DateTimeParseException ex) {
+                    JOptionPane.showMessageDialog(ExerciseEntryPanel.this,
+                            "Enter the date in YYYY-MM-DD format.",
+                            "Invalid Date", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
                 if (tableModel.getRowCount() == 0) {
                     JOptionPane.showMessageDialog(ExerciseEntryPanel.this, 
                             "Your session is empty! Add exercises first.", 
@@ -316,13 +365,24 @@ public class ExerciseEntryPanel extends JPanel {
                     return;
                 }
 
-                int duration = 0;
+                int duration;
                 try {
-                    duration = Integer.parseInt(durationText);
+                    duration = Integer.parseInt(durationText.trim());
                 } catch (NumberFormatException ex) {
-                    JOptionPane.showMessageDialog(ExerciseEntryPanel.this, 
-                            "Please enter a valid whole number for duration (e.g. 60).", 
-                            "Input Error", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(
+                            ExerciseEntryPanel.this,
+                            "Duration must be a whole number from 1 to 600 minutes.",
+                            "Invalid Duration",
+                            JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                if (duration < 1 || duration > 600) {
+                    JOptionPane.showMessageDialog(
+                            ExerciseEntryPanel.this,
+                            "Duration must be a whole number from 1 to 600 minutes.",
+                            "Invalid Duration",
+                            JOptionPane.ERROR_MESSAGE);
                     return;
                 }
 
@@ -339,32 +399,57 @@ public class ExerciseEntryPanel extends JPanel {
                 }
                 String trainedMuscles = String.join(", ", uniqueMuscles);
 
-                WorkoutSession session = new WorkoutSession(date, duration, trainedMuscles); 
-                
-                try {
-                    for (int i = 0; i < tableModel.getRowCount(); i++) {
+                WorkoutSession session = new WorkoutSession(date, duration, trainedMuscles);
+
+                for (int i = 0; i < tableModel.getRowCount(); i++) {
+                    try {
                         String name = tableModel.getValueAt(i, 0).toString();
-                        int setNumber = Integer.parseInt(tableModel.getValueAt(i, 1).toString());
-                        double weight = Double.parseDouble(tableModel.getValueAt(i, 2).toString());
-                        int reps = Integer.parseInt(tableModel.getValueAt(i, 3).toString());
-                        
-                        session.addExercise(new ExerciseSet(name, setNumber, weight, reps));
+                        int setNumber = Integer.parseInt(
+                                tableModel.getValueAt(i, 1).toString().trim());
+                        double weight = Double.parseDouble(
+                                tableModel.getValueAt(i, 2).toString().trim());
+                        int reps = Integer.parseInt(
+                                tableModel.getValueAt(i, 3).toString().trim());
+
+                        if (!Double.isFinite(weight) || weight < 0 || reps <= 0) {
+                            JOptionPane.showMessageDialog(
+                                    ExerciseEntryPanel.this,
+                                    "Row " + (i + 1)
+                                            + ": Weight must be 0 or greater.\n"
+                                            + "Reps must be a positive whole number.\n"
+                                            + "Fill in or delete unfinished template rows.",
+                                    "Invalid Workout Set",
+                                    JOptionPane.ERROR_MESSAGE);
+                            return;
+                        }
+
+                        session.addExercise(
+                                new ExerciseSet(name, setNumber, weight, reps));
+
+                    } catch (NumberFormatException | NullPointerException ex) {
+                        JOptionPane.showMessageDialog(
+                                ExerciseEntryPanel.this,
+                                "Row " + (i + 1)
+                                        + ": please enter valid weight and reps.\n"
+                                        + "Fill in or delete unfinished template rows.",
+                                "Invalid Workout Set",
+                                JOptionPane.ERROR_MESSAGE);
+                        return;
                     }
-                } catch (NumberFormatException ex) {
-                    JOptionPane.showMessageDialog(ExerciseEntryPanel.this, 
-                            "A table cell contains invalid text. Please fix it and try again.", 
+                }
+
+                if (!fileStorage.saveSession(session)) {
+                    JOptionPane.showMessageDialog(ExerciseEntryPanel.this,
+                            "Workout could not be saved. Check file permissions and try again.",
                             "Save Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
-
-                fileStorage.saveSession(session);
                 
                 JOptionPane.showMessageDialog(ExerciseEntryPanel.this, 
                         "Workout saved successfully to file!", 
                         "Workout Saved", JOptionPane.INFORMATION_MESSAGE);
                 
                 tableModel.setRowCount(0);
-                dateField.setText("");
                 durationField.setText(""); 
             }
         });
