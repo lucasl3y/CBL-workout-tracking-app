@@ -6,8 +6,8 @@ import java.util.HashMap;
 
 public class ExerciseCatalog {
 
-    private HashMap<String, ArrayList<String>> categoryMap;
-    private HashMap<String, String> muscleMap;
+    private final HashMap<String, ArrayList<String>> categoryMap;
+    private final HashMap<String, String> muscleMap;
 
     public ExerciseCatalog() {
         categoryMap = new HashMap<>();
@@ -50,11 +50,24 @@ public class ExerciseCatalog {
         muscleMap.put("Plank", "Core");
     }
 
-    // Adds a custom user-defined exercise to the catalog
-    public void addCustomExercise(String category, String name, String muscles) {
+    /**
+     * Adds a custom exercise unless its exact name already exists.
+     * Returns false for duplicate names without changing the catalog.
+     */
+    public boolean addCustomExercise(String category, String name, String muscles) {
+        String trimmedName = name.trim();
+
+        // Prevent duplicate names across categories, ignoring case.
+        for (String existingName : muscleMap.keySet()) {
+            if (existingName.equalsIgnoreCase(trimmedName)) {
+                return false;
+            }
+        }
+
         categoryMap.putIfAbsent(category, new ArrayList<>());
-        categoryMap.get(category).add(name);
-        muscleMap.put(name, muscles);
+        categoryMap.get(category).add(trimmedName);
+        muscleMap.put(trimmedName, muscles.trim());
+        return true;
     }
 
     public String[] getCategories() {

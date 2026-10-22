@@ -283,16 +283,35 @@ public class ExerciseEntryPanel extends JPanel {
             return;
         }
 
-        String muscles = JOptionPane.showInputDialog(ExerciseEntryPanel.this,
-                "Enter target muscles for " + name + ":");
+        String muscles;
 
-        if (muscles == null || muscles.trim().isEmpty()) {
-            return;
+        while (true) {
+            muscles = JOptionPane.showInputDialog(this,
+                    "Enter target muscles for " + name + ":");
+
+            if (muscles == null) {
+                return; // Cancel exits without creating an exercise.
+            }
+
+            if (!muscles.trim().isEmpty()) {
+                break;
+            }
+
+            JOptionPane.showMessageDialog(this,
+                    "Please enter the target muscles.",
+                    "Missing Target Muscles",
+                    JOptionPane.WARNING_MESSAGE);
         }
 
         name = name.trim();
         muscles = muscles.trim();
-        catalog.addCustomExercise(category, name, muscles);
+        if (!catalog.addCustomExercise(category, name, muscles)) {
+            JOptionPane.showMessageDialog(this,
+                    "An exercise with this name already exists. Please choose a different name.",
+                    "Duplicate Exercise",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
 
         // Switch to the chosen category and select the newly created exercise.
         categoryCombo.setSelectedItem(category);

@@ -1,11 +1,11 @@
 package model;
 
 public class ExerciseSet {
-    
-    private String exerciseName;
-    private int setNumber; 
-    private double weight;
-    private int reps;
+
+    private final String exerciseName;
+    private final int setNumber;
+    private final double weight;
+    private final int reps;
 
     public ExerciseSet(String exerciseName, int setNumber, double weight, int reps) {
         this.exerciseName = exerciseName;
