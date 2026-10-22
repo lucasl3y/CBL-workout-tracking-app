@@ -22,6 +22,10 @@ import model.ExerciseSet;
 import model.WorkoutSession;
 import storage.FileStorage;
 
+/**
+ * Displays saved workout sets grouped by session for the selected exercise.
+ * Matches exercise names without regard to case or surrounding whitespace.
+ */
 public class ProgressPanel extends JPanel {
 
     private final FileStorage fileStorage;
@@ -96,7 +100,7 @@ public class ProgressPanel extends JPanel {
     private void updateTable() {
         tableModel.setRowCount(0);
         String selectedName = (String) exerciseCombo.getSelectedItem();
-        if (selectedName == null || "Select Exercise".equals(selectedName)) {
+        if (selectedName == null || exerciseCombo.getSelectedIndex() == 0) {
             showSelectionPrompt();
             return;
         }
@@ -146,6 +150,7 @@ public class ProgressPanel extends JPanel {
         return newestFirst;
     }
 
+    // Display one row per session, combining all sets of the selected exercise.
     private void addSessionRow(WorkoutSession session, String exerciseName, int sessionNumber) {
         ArrayList<ExerciseSet> exerciseSets = findExerciseSets(session, exerciseName);
         if (exerciseSets.isEmpty()) {
@@ -180,6 +185,7 @@ public class ProgressPanel extends JPanel {
         return details.toString();
     }
 
+    // Normalize names consistently for selector deduplication and history matching.
     private String normalizeName(String name) {
         return name == null ? "" : name.trim().toLowerCase(Locale.ROOT);
     }

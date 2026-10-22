@@ -3,18 +3,31 @@ package model;
 import java.util.ArrayList;
 import java.util.UUID;
 
+/**
+ * Represents one workout session containing its date, duration,
+ * trained muscles, and exercise sets.
+ */
 public class WorkoutSession {
-    
-    private String date;
-    private int duration;
-    private String trainedMuscles; // NEW: Stores a comma-separated list of muscles
-    private ArrayList<ExerciseSet> exercises;
-    private String sessionId;
 
+    // Store the session date in ISO format (yyyy-MM-dd).
+    private final String date;
+
+    // Duration in minutes for the entire session, counted once regardless of set count.
+    private final int duration;
+    private final String trainedMuscles;
+    private final ArrayList<ExerciseSet> exercises;
+    private final String sessionId;
+
+    /**
+     * Creates a new workout session with a generated unique ID.
+     */
     public WorkoutSession(String date, int duration, String trainedMuscles) {
         this(date, duration, trainedMuscles, UUID.randomUUID().toString());
     }
 
+    /**
+     * Reconstructs a session using an existing ID, such as when loading saved history.
+     */
     public WorkoutSession(String date, int duration, String trainedMuscles, String sessionId) {
         this.date = date;
         this.duration = duration;

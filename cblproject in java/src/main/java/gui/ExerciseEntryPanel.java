@@ -283,16 +283,36 @@ public class ExerciseEntryPanel extends JPanel {
             return;
         }
 
-        String muscles = JOptionPane.showInputDialog(ExerciseEntryPanel.this,
-                "Enter target muscles for " + name + ":");
+        String muscles;
 
-        if (muscles == null || muscles.trim().isEmpty()) {
-            return;
+        // Keep requesting target muscles until the user provides a value or cancels.
+        while (true) {
+            muscles = JOptionPane.showInputDialog(this,
+                    "Enter target muscles for " + name + ":");
+
+            if (muscles == null) {
+                return; // Cancel exits without creating an exercise.
+            }
+
+            if (!muscles.trim().isEmpty()) {
+                break;
+            }
+
+            JOptionPane.showMessageDialog(this,
+                    "Please enter the target muscles.",
+                    "Missing Target Muscles",
+                    JOptionPane.WARNING_MESSAGE);
         }
 
         name = name.trim();
         muscles = muscles.trim();
-        catalog.addCustomExercise(category, name, muscles);
+        if (!catalog.addCustomExercise(category, name, muscles)) {
+            JOptionPane.showMessageDialog(this,
+                    "An exercise with this name already exists. Please choose a different name.",
+                    "Duplicate Exercise",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
 
         // Switch to the chosen category and select the newly created exercise.
         categoryCombo.setSelectedItem(category);
@@ -416,8 +436,8 @@ public class ExerciseEntryPanel extends JPanel {
             String muscles = catalog.getTargetMuscles(exerciseName);
             if (muscles != null && !muscles.isEmpty()) {
                 String[] muscleArray = muscles.split(",\\s*");
-                for (String m : muscleArray) {
-                    uniqueMuscles.add(m);
+                for (String muscle : muscleArray) {
+                    uniqueMuscles.add(muscle);
                 }
             }
         }
@@ -480,7 +500,8 @@ public class ExerciseEntryPanel extends JPanel {
     }
 
     /**
-     * Returns the next unused set number for the given exercise.
+     * Returns one more than the highest existing set number for this exercise.
+     * Gaps left by deleted sets are preserved.
      */
     private int getNextSetNumber(String exerciseName) {
         int maxSetNumber = 0;
@@ -496,6 +517,9 @@ public class ExerciseEntryPanel extends JPanel {
         return maxSetNumber + 1;
     }
 
+    /**
+     * Updates the draft's total training volume as the sum of weight times reps.
+     */
     private void updateVolumeCounter() {
         double totalVolume = 0.0;
 

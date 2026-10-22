@@ -10,6 +10,9 @@ public final class HistoryFile {
     private final List<String> prefixLines;
     private final List<List<String>> sessionBlocks;
 
+    /**
+     * Copies the supplied lists and makes both list levels unmodifiable.
+     */
     public HistoryFile(List<String> prefixLines, List<List<String>> sessionBlocks) {
         this.prefixLines = Collections.unmodifiableList(new ArrayList<>(prefixLines));
 

@@ -4,10 +4,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 
+/**
+ * Manages standard and custom exercises with their categories and target muscles.
+ * Custom exercises are kept in memory for the current application run.
+ */
 public class ExerciseCatalog {
 
-    private HashMap<String, ArrayList<String>> categoryMap;
-    private HashMap<String, String> muscleMap;
+    // Map categories to exercise names and exercise names to target muscles.
+    private final HashMap<String, ArrayList<String>> categoryMap;
+    private final HashMap<String, String> muscleMap;
 
     public ExerciseCatalog() {
         categoryMap = new HashMap<>();
@@ -50,17 +55,31 @@ public class ExerciseCatalog {
         muscleMap.put("Plank", "Core");
     }
 
-    // Adds a custom user-defined exercise to the catalog
-    public void addCustomExercise(String category, String name, String muscles) {
+    /**
+     * Adds a custom exercise unless its name already exists, ignoring case.
+     * Returns false for duplicate names without changing the catalog.
+     */
+    public boolean addCustomExercise(String category, String name, String muscles) {
+        String trimmedName = name.trim();
+
+        // Prevent duplicate names across categories, ignoring case.
+        for (String existingName : muscleMap.keySet()) {
+            if (existingName.equalsIgnoreCase(trimmedName)) {
+                return false;
+            }
+        }
+
         categoryMap.putIfAbsent(category, new ArrayList<>());
-        categoryMap.get(category).add(name);
-        muscleMap.put(name, muscles);
+        categoryMap.get(category).add(trimmedName);
+        muscleMap.put(trimmedName, muscles.trim());
+        return true;
     }
 
     public String[] getCategories() {
         return categoryMap.keySet().toArray(new String[0]);
     }
 
+    // Return a new array so callers cannot modify the catalog's internal lists.
     public String[] getExercisesByCategory(String category) {
         if (categoryMap.containsKey(category)) {
             return categoryMap.get(category).toArray(new String[0]);
