@@ -16,6 +16,10 @@ import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 
+/**
+ * Provides a read-only date field with a calendar dialog.
+ * Selected dates are returned in ISO format (yyyy-MM-dd).
+ */
 public class DatePickerField extends JPanel {
 
     private LocalDate selectedDate = LocalDate.now();
@@ -38,7 +42,8 @@ public class DatePickerField extends JPanel {
     }
 
     private void showCalendar() {
-        // Use a modal dialog so a date must be chosen before returning to the workout form.
+        // Block interaction with the workout form while the calendar is open.
+        // Closing the dialog without selecting a date keeps the previous value.
         JDialog dialog = new JDialog(SwingUtilities.getWindowAncestor(this), "Select Date",
                 Dialog.ModalityType.APPLICATION_MODAL);
         dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
@@ -91,6 +96,8 @@ public class DatePickerField extends JPanel {
             for (String weekday : weekdays) {
                 daysPanel.add(new JLabel(weekday, SwingConstants.CENTER));
             }
+
+            // Insert empty cells to align the first day with the Monday-first weekday header.
             for (int blank = 1; blank < displayedMonth.atDay(1).getDayOfWeek().getValue(); blank++) {
                 daysPanel.add(new JLabel(""));
             }

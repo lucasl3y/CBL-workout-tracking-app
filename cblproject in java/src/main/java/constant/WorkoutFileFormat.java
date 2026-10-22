@@ -1,7 +1,12 @@
 package constant;
 
+/**
+ * Defines the storage path and shared markers for the workout history format.
+ */
 public final class WorkoutFileFormat {
 
+    // Resolve the history file against the user's home directory,
+    // so its location does not depend on the application's working directory.
     public static final String FILE_NAME = java.nio.file.Path.of(
             System.getProperty("user.home"),
             "workout_tracker_history.txt"

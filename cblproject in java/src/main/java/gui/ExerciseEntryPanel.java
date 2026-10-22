@@ -7,7 +7,7 @@ import java.awt.event.ActionListener;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Locale; 
+import java.util.Locale;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
@@ -27,6 +27,10 @@ import model.TemplateManager;
 import model.WorkoutSession;
 import storage.FileStorage;
 
+/**
+ * Provides the workout entry form and editable draft session table.
+ * Builds a WorkoutSession from validated rows and delegates saving to FileStorage.
+ */
 public class ExerciseEntryPanel extends JPanel {
 
     private JComboBox<String> categoryCombo;
@@ -35,14 +39,14 @@ public class ExerciseEntryPanel extends JPanel {
     private JTextField weightField;
     private JTextField repsField;
     private DatePickerField dateField;
-    private JTextField durationField; 
-    
+    private JTextField durationField;
+
     private JTable sessionTable;
     private DefaultTableModel tableModel;
-    private JLabel volumeLabel; 
-    
+    private JLabel volumeLabel;
+
     private ExerciseCatalog catalog;
-    private FileStorage fileStorage; 
+    private FileStorage fileStorage;
     private TemplateManager templateManager;
 
     public ExerciseEntryPanel(ExerciseCatalog catalog) {
@@ -61,7 +65,7 @@ public class ExerciseEntryPanel extends JPanel {
         formPanel.add(new JLabel("Date:"));
         dateField = new DatePickerField();
         formPanel.add(dateField);
-        
+
         formPanel.add(new JLabel("Duration (minutes):"));
         durationField = new JTextField(10);
         formPanel.add(durationField);
@@ -92,29 +96,31 @@ public class ExerciseEntryPanel extends JPanel {
 
         JButton customButton = new JButton("Custom Exercise");
         JButton addButton = new JButton("Add 1 Set");
-        JButton saveButton = new JButton("Save Workout"); 
+        JButton saveButton = new JButton("Save Workout");
 
         JPanel buttonPanel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.CENTER, 5, 0));
         buttonPanel.add(customButton);
         buttonPanel.add(addButton);
         buttonPanel.add(saveButton);
-        
+
         JPanel templatePanel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT));
         templatePanel.setBorder(BorderFactory.createTitledBorder("Quick Load Templates"));
-        
+
         JComboBox<String> templateCombo = new JComboBox<>(templateManager.getTemplateNames());
         JButton loadTemplateButton = new JButton("Load");
         templatePanel.add(templateCombo);
         templatePanel.add(loadTemplateButton);
 
-        JPanel leftContainer = new JPanel(new BorderLayout(0, 10)); 
-        leftContainer.add(templatePanel, BorderLayout.NORTH); 
-        leftContainer.add(formPanel, BorderLayout.CENTER);    
-        leftContainer.add(buttonPanel, BorderLayout.SOUTH);   
+        JPanel leftContainer = new JPanel(new BorderLayout(0, 10));
+        leftContainer.add(templatePanel, BorderLayout.NORTH);
+        leftContainer.add(formPanel, BorderLayout.CENTER);
+        leftContainer.add(buttonPanel, BorderLayout.SOUTH);
 
         add(leftContainer, BorderLayout.WEST);
 
         String[] columnNames = {"Exercise", "Set", "Weight (kg)", "Reps"};
+
+        // Validate direct table edits and keep exercise names and set numbers read-only.
         tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -172,25 +178,26 @@ public class ExerciseEntryPanel extends JPanel {
         };
 
         sessionTable = new JTable(tableModel);
-        
+
         JScrollPane scrollPane = new JScrollPane(sessionTable);
         scrollPane.setBorder(BorderFactory.createTitledBorder("Current Workout Session"));
-        
+
         JPanel bottomTablePanel = new JPanel(new BorderLayout());
         JButton deleteButton = new JButton("Delete Selected Row");
-        
+
         volumeLabel = new JLabel("Total Volume: 0.0 kg");
         volumeLabel.setFont(new java.awt.Font("Dialog", java.awt.Font.BOLD, 14));
-        
+
         bottomTablePanel.add(deleteButton, BorderLayout.WEST);
         bottomTablePanel.add(volumeLabel, BorderLayout.EAST);
-        
+
         JPanel tableContainer = new JPanel(new BorderLayout(0, 10));
         tableContainer.add(scrollPane, BorderLayout.CENTER);
         tableContainer.add(bottomTablePanel, BorderLayout.SOUTH);
-        
+
         add(tableContainer, BorderLayout.CENTER);
 
+        // Recalculate total volume after rows are added, edited, or removed.
         tableModel.addTableModelListener(new TableModelListener() {
             @Override
             public void tableChanged(TableModelEvent e) {
@@ -225,20 +232,21 @@ public class ExerciseEntryPanel extends JPanel {
             public void actionPerformed(ActionEvent e) {
                 String selected = (String) templateCombo.getSelectedItem();
                 if (selected == null || selected.equals("Select Template...")) {
-                    return; 
+                    return;
                 }
-                
+
                 ArrayList<ExerciseSet> templateSets = templateManager.getTemplate(selected);
-                
+
+                // Template rows are drafts; fill in valid reps for every row before saving.
                 for (ExerciseSet set : templateSets) {
                     tableModel.addRow(new Object[]{
-                        set.getExerciseName(), 
-                        set.getSetNumber(), 
-                        set.getWeight(), 
-                        set.getReps()
+                            set.getExerciseName(),
+                            getNextSetNumber(set.getExerciseName()),
+                            set.getWeight(),
+                            set.getReps()
                     });
                 }
-                
+
                 templateCombo.setSelectedIndex(0);
             }
         });
@@ -246,25 +254,25 @@ public class ExerciseEntryPanel extends JPanel {
         customButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String name = JOptionPane.showInputDialog(ExerciseEntryPanel.this, 
+                String name = JOptionPane.showInputDialog(ExerciseEntryPanel.this,
                         "Enter custom exercise name:");
-                
+
                 if (name == null || name.trim().isEmpty()) {
-                    return; 
+                    return;
                 }
 
-                String category = (String) JOptionPane.showInputDialog(ExerciseEntryPanel.this, 
-                        "Select Category for " + name + ":", "Category", 
-                        JOptionPane.QUESTION_MESSAGE, null, 
+                String category = (String) JOptionPane.showInputDialog(ExerciseEntryPanel.this,
+                        "Select Category for " + name + ":", "Category",
+                        JOptionPane.QUESTION_MESSAGE, null,
                         catalog.getCategories(), catalog.getCategories()[0]);
-                        
+
                 if (category == null) {
                     return;
                 }
 
-                String muscles = JOptionPane.showInputDialog(ExerciseEntryPanel.this, 
+                String muscles = JOptionPane.showInputDialog(ExerciseEntryPanel.this,
                         "Enter target muscles for " + name + ":");
-                        
+
                 if (muscles == null || muscles.trim().isEmpty()) {
                     return;
                 }
@@ -298,12 +306,7 @@ public class ExerciseEntryPanel extends JPanel {
                         return;
                     }
 
-                    int setNumber = 1;
-                    for (int i = 0; i < tableModel.getRowCount(); i++) {
-                        if (tableModel.getValueAt(i, 0).equals(name)) {
-                            setNumber++;
-                        }
-                    }
+                    int setNumber = getNextSetNumber(name);
 
                     tableModel.addRow(new Object[]{name, setNumber, weight, reps});
 
@@ -325,8 +328,8 @@ public class ExerciseEntryPanel extends JPanel {
                 if (selectedRow != -1) {
                     tableModel.removeRow(selectedRow);
                 } else {
-                    JOptionPane.showMessageDialog(ExerciseEntryPanel.this, 
-                            "Please select a row in the table first.", 
+                    JOptionPane.showMessageDialog(ExerciseEntryPanel.this,
+                            "Please select a row in the table first.",
                             "No Row Selected", JOptionPane.WARNING_MESSAGE);
                 }
             }
@@ -335,17 +338,19 @@ public class ExerciseEntryPanel extends JPanel {
         saveButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+
+                // Commit the active cell edit before reading values from the table.
                 if (sessionTable.isEditing()
                         && !sessionTable.getCellEditor().stopCellEditing()) {
                     return;
                 }
-                
+
                 String date = dateField.getText();
-                String durationText = durationField.getText(); 
-                
+                String durationText = durationField.getText();
+
                 if (date.trim().isEmpty()) {
-                    JOptionPane.showMessageDialog(ExerciseEntryPanel.this, 
-                            "Please enter a date first.", 
+                    JOptionPane.showMessageDialog(ExerciseEntryPanel.this,
+                            "Please enter a date first.",
                             "Missing Date", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
@@ -359,8 +364,8 @@ public class ExerciseEntryPanel extends JPanel {
                     return;
                 }
                 if (tableModel.getRowCount() == 0) {
-                    JOptionPane.showMessageDialog(ExerciseEntryPanel.this, 
-                            "Your session is empty! Add exercises first.", 
+                    JOptionPane.showMessageDialog(ExerciseEntryPanel.this,
+                            "Your session is empty! Add exercises first.",
                             "Empty Session", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
@@ -386,6 +391,7 @@ public class ExerciseEntryPanel extends JPanel {
                     return;
                 }
 
+                // Collect each target muscle once across all exercises in the session.
                 HashSet<String> uniqueMuscles = new HashSet<>();
                 for (int i = 0; i < tableModel.getRowCount(); i++) {
                     String exerciseName = tableModel.getValueAt(i, 0).toString();
@@ -401,6 +407,7 @@ public class ExerciseEntryPanel extends JPanel {
 
                 WorkoutSession session = new WorkoutSession(date, duration, trainedMuscles);
 
+                // Validate every row before writing the complete session to disk.
                 for (int i = 0; i < tableModel.getRowCount(); i++) {
                     try {
                         String name = tableModel.getValueAt(i, 0).toString();
@@ -444,29 +451,48 @@ public class ExerciseEntryPanel extends JPanel {
                             "Save Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
-                
-                JOptionPane.showMessageDialog(ExerciseEntryPanel.this, 
-                        "Workout saved successfully to file!", 
+
+                JOptionPane.showMessageDialog(ExerciseEntryPanel.this,
+                        "Workout saved successfully to file!",
                         "Workout Saved", JOptionPane.INFORMATION_MESSAGE);
-                
+
+                // Clear the draft only after the session has been saved successfully.
                 tableModel.setRowCount(0);
-                durationField.setText(""); 
+                durationField.setText("");
             }
         });
     }
 
+    /**
+     * Returns the next unused set number for the given exercise.
+     */
+    private int getNextSetNumber(String exerciseName) {
+        int maxSetNumber = 0;
+
+        for (int i = 0; i < tableModel.getRowCount(); i++) {
+            if (exerciseName.equals(tableModel.getValueAt(i, 0))) {
+                int currentSetNumber = Integer.parseInt(
+                        tableModel.getValueAt(i, 1).toString());
+                maxSetNumber = Math.max(maxSetNumber, currentSetNumber);
+            }
+        }
+
+        return maxSetNumber + 1;
+    }
+
     private void updateVolumeCounter() {
         double totalVolume = 0.0;
-        
+
         for (int i = 0; i < tableModel.getRowCount(); i++) {
             try {
                 double weight = Double.parseDouble(tableModel.getValueAt(i, 2).toString());
                 int reps = Integer.parseInt(tableModel.getValueAt(i, 3).toString());
                 totalVolume += (weight * reps);
             } catch (NumberFormatException ex) {
+                // Ignore non-numeric rows in the preview; saving validates every row separately.
             }
         }
-        
+
         volumeLabel.setText(String.format(Locale.US, "Total Volume: %.1f kg", totalVolume));
     }
 }
