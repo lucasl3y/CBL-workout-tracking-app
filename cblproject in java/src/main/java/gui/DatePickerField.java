@@ -53,6 +53,7 @@ public class DatePickerField extends JPanel {
         dialog.setVisible(true);
     }
 
+    // Keep calendar navigation and rendering inside the date picker component.
     private class CalendarPanel extends JPanel {
 
         private final JDialog dialog;
@@ -109,6 +110,8 @@ public class DatePickerField extends JPanel {
                     dayButton.setBackground(new java.awt.Color(190, 220, 245));
                     dayButton.setOpaque(true);
                 }
+
+                // Apply the selected date to the field and close the calendar.
                 dayButton.addActionListener(e -> {
                     selectedDate = date;
                     dateField.setText(date.toString());

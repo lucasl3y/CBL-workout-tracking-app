@@ -4,8 +4,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 
+/**
+ * Manages standard and custom exercises with their categories and target muscles.
+ * Custom exercises are kept in memory for the current application run.
+ */
 public class ExerciseCatalog {
 
+    // Map categories to exercise names and exercise names to target muscles.
     private final HashMap<String, ArrayList<String>> categoryMap;
     private final HashMap<String, String> muscleMap;
 
@@ -51,7 +56,7 @@ public class ExerciseCatalog {
     }
 
     /**
-     * Adds a custom exercise unless its exact name already exists.
+     * Adds a custom exercise unless its name already exists, ignoring case.
      * Returns false for duplicate names without changing the catalog.
      */
     public boolean addCustomExercise(String category, String name, String muscles) {
@@ -74,6 +79,7 @@ public class ExerciseCatalog {
         return categoryMap.keySet().toArray(new String[0]);
     }
 
+    // Return a new array so callers cannot modify the catalog's internal lists.
     public String[] getExercisesByCategory(String category) {
         if (categoryMap.containsKey(category)) {
             return categoryMap.get(category).toArray(new String[0]);

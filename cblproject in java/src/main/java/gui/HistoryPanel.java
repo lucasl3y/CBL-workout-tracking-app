@@ -22,10 +22,14 @@ import javax.swing.JPanel;
 import storage.FileStorage;
 import model.WorkoutSession;
 
+/**
+ * Displays saved workout sessions in a monthly calendar with summary totals.
+ * Allows users to inspect and delete individual sessions.
+ */
 public class HistoryPanel extends JPanel {
 
     private final FileStorage fileStorage;
-    private YearMonth currentMonth;
+    private YearMonth displayedMonth;
     private Set<String> workoutDates;
     private List<WorkoutSession> sessions;
     private JPanel calendarGrid;
@@ -34,7 +38,7 @@ public class HistoryPanel extends JPanel {
 
     public HistoryPanel(FileStorage fileStorage) {
         this.fileStorage = fileStorage;
-        this.currentMonth = YearMonth.now();
+        this.displayedMonth = YearMonth.now();
         initUI();
     }
 
@@ -66,17 +70,18 @@ public class HistoryPanel extends JPanel {
         add(calendarGrid, BorderLayout.CENTER);
 
         prevButton.addActionListener(e -> {
-            currentMonth = currentMonth.minusMonths(1);
+            displayedMonth = displayedMonth.minusMonths(1);
             updateCalendar();
         });
         nextButton.addActionListener(e -> {
-            currentMonth = currentMonth.plusMonths(1);
+            displayedMonth = displayedMonth.plusMonths(1);
             updateCalendar();
         });
         refreshButton.addActionListener(e -> updateCalendar());
         updateCalendar();
     }
 
+    // Reload saved sessions while keeping the currently displayed month.
     public void refresh() {
         updateCalendar();
     }
@@ -90,8 +95,8 @@ public class HistoryPanel extends JPanel {
             workoutDates.add(session.getDate());
         }
 
-        String monthName = currentMonth.getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH);
-        monthLabel.setText(monthName + " " + currentMonth.getYear());
+        String monthName = displayedMonth.getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH);
+        monthLabel.setText(monthName + " " + displayedMonth.getYear());
         updateSummary();
 
         String[] days = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
@@ -101,15 +106,17 @@ public class HistoryPanel extends JPanel {
             calendarGrid.add(label);
         }
 
-        LocalDate firstOfMonth = currentMonth.atDay(1);
+        LocalDate firstOfMonth = displayedMonth.atDay(1);
         int dayOfWeek = firstOfMonth.getDayOfWeek().getValue();
+
+        // Add leading empty cells to align dates with the Monday-first header.
         for (int i = 1; i < dayOfWeek; i++) {
             calendarGrid.add(new JLabel(""));
         }
 
-        for (int day = 1; day <= currentMonth.lengthOfMonth(); day++) {
+        for (int day = 1; day <= displayedMonth.lengthOfMonth(); day++) {
             String dateString = String.format(Locale.ROOT, "%04d-%02d-%02d",
-                    currentMonth.getYear(), currentMonth.getMonthValue(), day);
+                    displayedMonth.getYear(), displayedMonth.getMonthValue(), day);
             JButton dayButton = new JButton(String.valueOf(day));
             if (workoutDates.contains(dateString)) {
                 dayButton.setBackground(new Color(144, 238, 144));
@@ -145,13 +152,14 @@ public class HistoryPanel extends JPanel {
     private boolean isWorkoutInCurrentMonth(WorkoutSession session) {
         try {
             LocalDate date = LocalDate.parse(session.getDate());
-            return YearMonth.from(date).equals(currentMonth);
+            return YearMonth.from(date).equals(displayedMonth);
         } catch (DateTimeParseException ignored) {
             // Exclude records with invalid dates from monthly totals.
             return false;
         }
     }
 
+    // Count sessions separately, but count each training date only once.
     private static class MonthlySummary {
 
         private int workouts;
@@ -187,16 +195,18 @@ public class HistoryPanel extends JPanel {
             return;
         }
         int index = java.util.Arrays.asList(choices).indexOf(selection);
-        WorkoutSession selected = dateSessions.get(index);
+        WorkoutSession selectedSession = dateSessions.get(index);
         String[] options = {"Close", "Delete This Session"};
-        int action = JOptionPane.showOptionDialog(this, detailsFor(selected), "Workout on " + date,
+        int action = JOptionPane.showOptionDialog(this, detailsFor(selectedSession), "Workout on " + date,
                 JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
         if (action == 1) {
             int confirm = JOptionPane.showConfirmDialog(this,
                     "Delete only this workout session? This action cannot be undone.",
                     "Confirm Deletion", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
             if (confirm == JOptionPane.YES_OPTION) {
-                if (fileStorage.deleteSession(selected.getSessionId())) {
+
+                // Delete by the persistent session ID to preserve other sessions on the same date.
+                if (fileStorage.deleteSession(selectedSession.getSessionId())) {
                     updateCalendar();
                     JOptionPane.showMessageDialog(this, "Workout successfully deleted.",
                             "Deleted", JOptionPane.INFORMATION_MESSAGE);
@@ -214,6 +224,8 @@ public class HistoryPanel extends JPanel {
         if (session.getTrainedMuscles() != null && !session.getTrainedMuscles().isEmpty()) {
             details.append("Trained Muscles: ").append(session.getTrainedMuscles()).append("\n");
         }
+
+        // Include every exercise set belonging to the selected session.
         for (model.ExerciseSet set : session.getExercises()) {
             details.append(set).append("\n");
         }

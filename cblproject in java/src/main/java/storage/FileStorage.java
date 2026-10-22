@@ -18,6 +18,10 @@ import constant.WorkoutFileFormat;
 import model.ExerciseSet;
 import model.WorkoutSession;
 
+/**
+ * Handles workout history file access and delegates text conversion to the codec.
+ * Deletes individual sessions by rewriting the remaining history through a temporary file.
+ */
 public class FileStorage {
 
     public boolean saveSession(WorkoutSession session) {
@@ -113,6 +117,8 @@ public class FileStorage {
     }
 
     private HistoryFile parseHistoryFile(List<String> lines) {
+
+        // Preserve non-session lines and retain each session block for selective deletion.
         ArrayList<String> prefixLines = new ArrayList<>();
         ArrayList<List<String>> sessionBlocks = new ArrayList<>();
         ArrayList<String> currentBlock = null;
@@ -149,6 +155,8 @@ public class FileStorage {
     private void rewriteHistoryFile(Path path, HistoryFile historyFile, int excludedIndex)
             throws IOException {
         Path absolutePath = path.toAbsolutePath();
+
+        // Create the temporary file in the same directory as the original history file.
         Path tempPath = Files.createTempFile(absolutePath.getParent(), "workout-history-", ".tmp");
         try {
             writeHistoryFile(tempPath, historyFile, excludedIndex);
@@ -186,6 +194,7 @@ public class FileStorage {
             Files.move(tempPath, path, StandardCopyOption.REPLACE_EXISTING,
                     StandardCopyOption.ATOMIC_MOVE);
         } catch (AtomicMoveNotSupportedException e) {
+            // Fall back to a regular replacement if atomic moves are unsupported.
             Files.move(tempPath, path, StandardCopyOption.REPLACE_EXISTING);
         }
     }

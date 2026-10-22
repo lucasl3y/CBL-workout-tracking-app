@@ -9,7 +9,10 @@ import java.util.UUID;
  */
 public class WorkoutSession {
 
+    // Store the session date in ISO format (yyyy-MM-dd).
     private final String date;
+
+    // Duration in minutes for the entire session, counted once regardless of set count.
     private final int duration;
     private final String trainedMuscles;
     private final ArrayList<ExerciseSet> exercises;

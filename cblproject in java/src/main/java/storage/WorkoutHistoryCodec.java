@@ -32,6 +32,9 @@ final class WorkoutHistoryCodec {
                 && line.endsWith(WorkoutFileFormat.DATE_SUFFIX);
     }
 
+    /**
+     * Parses one session block and appends the reconstructed session to the result list.
+     */
     static void addSession(List<String> block, List<WorkoutSession> sessions) {
         if (block.isEmpty() || !isDateHeader(block.get(0))) {
             return;
@@ -82,6 +85,7 @@ final class WorkoutHistoryCodec {
         }
     }
 
+    // Derive an ID for older records using the date and preceding same-date session count.
     private static String createLegacySessionId(String date, List<WorkoutSession> sessions) {
         int sameDateCount = 0;
         for (WorkoutSession session : sessions) {
@@ -92,6 +96,7 @@ final class WorkoutHistoryCodec {
         return "legacy:" + date + ":" + sameDateCount;
     }
 
+    // Try the individual-set format first, then fall back to the legacy set-count format.
     private static void parseSet(String line, List<ExerciseSet> sets) {
         int marker = line.lastIndexOf(WorkoutFileFormat.SET_MARKER);
         if (marker >= 0 && parseCurrentSet(line, marker, sets)) {

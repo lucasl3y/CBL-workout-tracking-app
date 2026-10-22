@@ -7,6 +7,10 @@ import java.util.ArrayList;
  */
 public class TemplateManager {
 
+    /**
+     * Creates a fresh list of draft sets for the requested template.
+     * Returns an empty list if the name does not match a predefined template.
+     */
     public ArrayList<ExerciseSet> getTemplate(String templateName) {
         ArrayList<ExerciseSet> templateExercises = new ArrayList<>();
 
