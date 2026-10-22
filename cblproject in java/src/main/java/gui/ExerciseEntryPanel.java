@@ -227,240 +227,250 @@ public class ExerciseEntryPanel extends JPanel {
             }
         });
 
-        loadTemplateButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String selected = (String) templateCombo.getSelectedItem();
-                if (selected == null || selected.equals("Select Template...")) {
-                    return;
-                }
+        loadTemplateButton.addActionListener(e -> loadTemplate(templateCombo));
 
-                ArrayList<ExerciseSet> templateSets = templateManager.getTemplate(selected);
+        customButton.addActionListener(e -> addCustomExercise());
 
-                // Template rows are drafts; fill in valid reps for every row before saving.
-                for (ExerciseSet set : templateSets) {
-                    tableModel.addRow(new Object[]{
-                            set.getExerciseName(),
-                            getNextSetNumber(set.getExerciseName()),
-                            set.getWeight(),
-                            set.getReps()
-                    });
-                }
+        addButton.addActionListener(e -> addSet());
 
-                templateCombo.setSelectedIndex(0);
+        deleteButton.addActionListener(e -> deleteSelectedRow());
+
+        saveButton.addActionListener(e -> saveWorkout());
+    }
+
+
+    /**
+     * Appends template sets using the next available number for each exercise.
+     */
+    private void loadTemplate(JComboBox<String> templateCombo) {
+        String selected = (String) templateCombo.getSelectedItem();
+        if (selected == null || selected.equals("Select Template...")) {
+            return;
+        }
+
+        ArrayList<ExerciseSet> templateSets = templateManager.getTemplate(selected);
+
+        // Template rows are drafts; fill in valid reps for every row before saving.
+        for (ExerciseSet set : templateSets) {
+            tableModel.addRow(new Object[]{
+                    set.getExerciseName(),
+                    getNextSetNumber(set.getExerciseName()),
+                    set.getWeight(),
+                    set.getReps()
+            });
+        }
+
+        templateCombo.setSelectedIndex(0);
+    }
+
+    /**
+     * Collects custom exercise details and updates the exercise catalog.
+     */
+    private void addCustomExercise() {
+        String name = JOptionPane.showInputDialog(ExerciseEntryPanel.this,
+                "Enter custom exercise name:");
+
+        if (name == null || name.trim().isEmpty()) {
+            return;
+        }
+
+        String category = (String) JOptionPane.showInputDialog(ExerciseEntryPanel.this,
+                "Select Category for " + name + ":", "Category",
+                JOptionPane.QUESTION_MESSAGE, null,
+                catalog.getCategories(), catalog.getCategories()[0]);
+
+        if (category == null) {
+            return;
+        }
+
+        String muscles = JOptionPane.showInputDialog(ExerciseEntryPanel.this,
+                "Enter target muscles for " + name + ":");
+
+        if (muscles == null || muscles.trim().isEmpty()) {
+            return;
+        }
+
+        catalog.addCustomExercise(category, name, muscles);
+
+        String currentCategory = (String) categoryCombo.getSelectedItem();
+        if (currentCategory.equals(category)) {
+            exerciseCombo.setModel(new DefaultComboBoxModel<>(
+                    catalog.getExercisesByCategory(category)));
+            exerciseCombo.setSelectedItem(name);
+        }
+    }
+
+    /**
+     * Validates the weight and reps, then adds one set to the draft.
+     */
+    private void addSet() {
+        try {
+            String name = (String) exerciseCombo.getSelectedItem();
+            double weight = Double.parseDouble(weightField.getText());
+            int reps = Integer.parseInt(repsField.getText());
+
+            if (!Double.isFinite(weight) || weight < 0 || reps <= 0) {
+                JOptionPane.showMessageDialog(
+                        ExerciseEntryPanel.this,
+                        "Weight must be 0 or greater.\n"
+                                + "Reps must be a positive whole number.",
+                        "Input Error",
+                        JOptionPane.ERROR_MESSAGE);
+                return;
             }
-        });
 
-        customButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String name = JOptionPane.showInputDialog(ExerciseEntryPanel.this,
-                        "Enter custom exercise name:");
+            int setNumber = getNextSetNumber(name);
+            tableModel.addRow(new Object[]{name, setNumber, weight, reps});
 
-                if (name == null || name.trim().isEmpty()) {
-                    return;
-                }
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(
+                    ExerciseEntryPanel.this,
+                    "Weight must be 0 or greater.\n"
+                            + "Reps must be a positive whole number.",
+                    "Input Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
 
-                String category = (String) JOptionPane.showInputDialog(ExerciseEntryPanel.this,
-                        "Select Category for " + name + ":", "Category",
-                        JOptionPane.QUESTION_MESSAGE, null,
-                        catalog.getCategories(), catalog.getCategories()[0]);
+    /**
+     * Removes the selected set from the draft session.
+     */
+    private void deleteSelectedRow() {
+        int selectedRow = sessionTable.getSelectedRow();
+        if (selectedRow != -1) {
+            tableModel.removeRow(selectedRow);
+        } else {
+            JOptionPane.showMessageDialog(ExerciseEntryPanel.this,
+                    "Please select a row in the table first.",
+                    "No Row Selected", JOptionPane.WARNING_MESSAGE);
+        }
+    }
 
-                if (category == null) {
-                    return;
-                }
+    /**
+     * Validates and saves the complete draft workout.
+     * Keeps the draft unchanged if validation or saving fails.
+     */
+    private void saveWorkout() {
+        // Commit the active cell edit before reading values from the table.
+        if (sessionTable.isEditing()
+                && !sessionTable.getCellEditor().stopCellEditing()) {
+            return;
+        }
 
-                String muscles = JOptionPane.showInputDialog(ExerciseEntryPanel.this,
-                        "Enter target muscles for " + name + ":");
+        String date = dateField.getText();
+        String durationText = durationField.getText();
 
-                if (muscles == null || muscles.trim().isEmpty()) {
-                    return;
-                }
+        if (date.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(ExerciseEntryPanel.this,
+                    "Please enter a date first.",
+                    "Missing Date", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        try {
+            // Normalize the selected value before saving and validate the date format.
+            date = LocalDate.parse(date.trim()).toString();
+        } catch (java.time.format.DateTimeParseException ex) {
+            JOptionPane.showMessageDialog(ExerciseEntryPanel.this,
+                    "Enter the date in YYYY-MM-DD format.",
+                    "Invalid Date", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        if (tableModel.getRowCount() == 0) {
+            JOptionPane.showMessageDialog(ExerciseEntryPanel.this,
+                    "Your session is empty! Add exercises first.",
+                    "Empty Session", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
-                catalog.addCustomExercise(category, name, muscles);
+        int duration;
+        try {
+            duration = Integer.parseInt(durationText.trim());
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(
+                    ExerciseEntryPanel.this,
+                    "Duration must be a whole number from 1 to 600 minutes.",
+                    "Invalid Duration",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
-                String currentCategory = (String) categoryCombo.getSelectedItem();
-                if (currentCategory.equals(category)) {
-                    exerciseCombo.setModel(new DefaultComboBoxModel<>(
-                            catalog.getExercisesByCategory(category)));
-                    exerciseCombo.setSelectedItem(name);
+        if (duration < 1 || duration > 600) {
+            JOptionPane.showMessageDialog(
+                    ExerciseEntryPanel.this,
+                    "Duration must be a whole number from 1 to 600 minutes.",
+                    "Invalid Duration",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Collect each target muscle once across all exercises in the session.
+        HashSet<String> uniqueMuscles = new HashSet<>();
+        for (int i = 0; i < tableModel.getRowCount(); i++) {
+            String exerciseName = tableModel.getValueAt(i, 0).toString();
+            String muscles = catalog.getTargetMuscles(exerciseName);
+            if (muscles != null && !muscles.isEmpty()) {
+                String[] muscleArray = muscles.split(",\\s*");
+                for (String m : muscleArray) {
+                    uniqueMuscles.add(m);
                 }
             }
-        });
+        }
+        String trainedMuscles = String.join(", ", uniqueMuscles);
 
-        addButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    String name = (String) exerciseCombo.getSelectedItem();
-                    double weight = Double.parseDouble(weightField.getText());
-                    int reps = Integer.parseInt(repsField.getText());
+        WorkoutSession session = new WorkoutSession(date, duration, trainedMuscles);
 
-                    if (!Double.isFinite(weight) || weight < 0 || reps <= 0) {
-                        JOptionPane.showMessageDialog(
-                                ExerciseEntryPanel.this,
-                                "Weight must be 0 or greater.\n"
-                                        + "Reps must be a positive whole number.",
-                                "Input Error",
-                                JOptionPane.ERROR_MESSAGE);
-                        return;
-                    }
+        // Validate every row before writing the complete session to disk.
+        for (int i = 0; i < tableModel.getRowCount(); i++) {
+            try {
+                String name = tableModel.getValueAt(i, 0).toString();
+                int setNumber = Integer.parseInt(
+                        tableModel.getValueAt(i, 1).toString().trim());
+                double weight = Double.parseDouble(
+                        tableModel.getValueAt(i, 2).toString().trim());
+                int reps = Integer.parseInt(
+                        tableModel.getValueAt(i, 3).toString().trim());
 
-                    int setNumber = getNextSetNumber(name);
-
-                    tableModel.addRow(new Object[]{name, setNumber, weight, reps});
-
-                } catch (NumberFormatException ex) {
+                if (!Double.isFinite(weight) || weight < 0 || reps <= 0) {
                     JOptionPane.showMessageDialog(
                             ExerciseEntryPanel.this,
-                            "Weight must be 0 or greater.\n"
-                                    + "Reps must be a positive whole number.",
-                            "Input Error",
-                            JOptionPane.ERROR_MESSAGE);
-                }
-            }
-        });
-
-        deleteButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                int selectedRow = sessionTable.getSelectedRow();
-                if (selectedRow != -1) {
-                    tableModel.removeRow(selectedRow);
-                } else {
-                    JOptionPane.showMessageDialog(ExerciseEntryPanel.this,
-                            "Please select a row in the table first.",
-                            "No Row Selected", JOptionPane.WARNING_MESSAGE);
-                }
-            }
-        });
-
-        saveButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-
-                // Commit the active cell edit before reading values from the table.
-                if (sessionTable.isEditing()
-                        && !sessionTable.getCellEditor().stopCellEditing()) {
-                    return;
-                }
-
-                String date = dateField.getText();
-                String durationText = durationField.getText();
-
-                if (date.trim().isEmpty()) {
-                    JOptionPane.showMessageDialog(ExerciseEntryPanel.this,
-                            "Please enter a date first.",
-                            "Missing Date", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-                try {
-                    // Normalize the selected value before saving and validate the date format.
-                    date = LocalDate.parse(date.trim()).toString();
-                } catch (java.time.format.DateTimeParseException ex) {
-                    JOptionPane.showMessageDialog(ExerciseEntryPanel.this,
-                            "Enter the date in YYYY-MM-DD format.",
-                            "Invalid Date", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-                if (tableModel.getRowCount() == 0) {
-                    JOptionPane.showMessageDialog(ExerciseEntryPanel.this,
-                            "Your session is empty! Add exercises first.",
-                            "Empty Session", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-
-                int duration;
-                try {
-                    duration = Integer.parseInt(durationText.trim());
-                } catch (NumberFormatException ex) {
-                    JOptionPane.showMessageDialog(
-                            ExerciseEntryPanel.this,
-                            "Duration must be a whole number from 1 to 600 minutes.",
-                            "Invalid Duration",
+                            "Row " + (i + 1)
+                                    + ": Weight must be 0 or greater.\n"
+                                    + "Reps must be a positive whole number.\n"
+                                    + "Fill in or delete unfinished template rows.",
+                            "Invalid Workout Set",
                             JOptionPane.ERROR_MESSAGE);
                     return;
                 }
 
-                if (duration < 1 || duration > 600) {
-                    JOptionPane.showMessageDialog(
-                            ExerciseEntryPanel.this,
-                            "Duration must be a whole number from 1 to 600 minutes.",
-                            "Invalid Duration",
-                            JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
+                session.addExercise(
+                        new ExerciseSet(name, setNumber, weight, reps));
 
-                // Collect each target muscle once across all exercises in the session.
-                HashSet<String> uniqueMuscles = new HashSet<>();
-                for (int i = 0; i < tableModel.getRowCount(); i++) {
-                    String exerciseName = tableModel.getValueAt(i, 0).toString();
-                    String muscles = catalog.getTargetMuscles(exerciseName);
-                    if (muscles != null && !muscles.isEmpty()) {
-                        String[] muscleArray = muscles.split(",\\s*");
-                        for (String m : muscleArray) {
-                            uniqueMuscles.add(m);
-                        }
-                    }
-                }
-                String trainedMuscles = String.join(", ", uniqueMuscles);
-
-                WorkoutSession session = new WorkoutSession(date, duration, trainedMuscles);
-
-                // Validate every row before writing the complete session to disk.
-                for (int i = 0; i < tableModel.getRowCount(); i++) {
-                    try {
-                        String name = tableModel.getValueAt(i, 0).toString();
-                        int setNumber = Integer.parseInt(
-                                tableModel.getValueAt(i, 1).toString().trim());
-                        double weight = Double.parseDouble(
-                                tableModel.getValueAt(i, 2).toString().trim());
-                        int reps = Integer.parseInt(
-                                tableModel.getValueAt(i, 3).toString().trim());
-
-                        if (!Double.isFinite(weight) || weight < 0 || reps <= 0) {
-                            JOptionPane.showMessageDialog(
-                                    ExerciseEntryPanel.this,
-                                    "Row " + (i + 1)
-                                            + ": Weight must be 0 or greater.\n"
-                                            + "Reps must be a positive whole number.\n"
-                                            + "Fill in or delete unfinished template rows.",
-                                    "Invalid Workout Set",
-                                    JOptionPane.ERROR_MESSAGE);
-                            return;
-                        }
-
-                        session.addExercise(
-                                new ExerciseSet(name, setNumber, weight, reps));
-
-                    } catch (NumberFormatException | NullPointerException ex) {
-                        JOptionPane.showMessageDialog(
-                                ExerciseEntryPanel.this,
-                                "Row " + (i + 1)
-                                        + ": please enter valid weight and reps.\n"
-                                        + "Fill in or delete unfinished template rows.",
-                                "Invalid Workout Set",
-                                JOptionPane.ERROR_MESSAGE);
-                        return;
-                    }
-                }
-
-                if (!fileStorage.saveSession(session)) {
-                    JOptionPane.showMessageDialog(ExerciseEntryPanel.this,
-                            "Workout could not be saved. Check file permissions and try again.",
-                            "Save Error", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-
-                JOptionPane.showMessageDialog(ExerciseEntryPanel.this,
-                        "Workout saved successfully to file!",
-                        "Workout Saved", JOptionPane.INFORMATION_MESSAGE);
-
-                // Clear the draft only after the session has been saved successfully.
-                tableModel.setRowCount(0);
-                durationField.setText("");
+            } catch (NumberFormatException | NullPointerException ex) {
+                JOptionPane.showMessageDialog(
+                        ExerciseEntryPanel.this,
+                        "Row " + (i + 1)
+                                + ": please enter valid weight and reps.\n"
+                                + "Fill in or delete unfinished template rows.",
+                        "Invalid Workout Set",
+                        JOptionPane.ERROR_MESSAGE);
+                return;
             }
-        });
+        }
+
+        if (!fileStorage.saveSession(session)) {
+            JOptionPane.showMessageDialog(ExerciseEntryPanel.this,
+                    "Workout could not be saved. Check file permissions and try again.",
+                    "Save Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        JOptionPane.showMessageDialog(ExerciseEntryPanel.this,
+                "Workout saved successfully to file!",
+                "Workout Saved", JOptionPane.INFORMATION_MESSAGE);
+
+        // Clear the draft only after the session has been saved successfully.
+        tableModel.setRowCount(0);
+        durationField.setText("");
     }
 
     /**
