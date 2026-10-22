@@ -62,10 +62,19 @@ public class ProgressPanel extends JPanel {
         String previousSelection = (String) exerciseCombo.getSelectedItem();
         List<WorkoutSession> sessions = fileStorage.loadSessions();
         LinkedHashSet<String> names = new LinkedHashSet<>();
+        LinkedHashSet<String> normalizedNames = new LinkedHashSet<>();
+
         for (WorkoutSession session : sessions) {
             for (ExerciseSet set : session.getExercises()) {
-                if (set.getExerciseName() != null && !set.getExerciseName().trim().isEmpty()) {
-                    names.add(set.getExerciseName().trim());
+                String name = set.getExerciseName();
+                if (name == null || name.trim().isEmpty()) {
+                    continue;
+                }
+
+                // Merge names case-insensitively while preserving the first spelling for display.
+                String displayName = name.trim();
+                if (normalizedNames.add(normalizeName(displayName))) {
+                    names.add(displayName);
                 }
             }
         }
@@ -109,17 +118,23 @@ public class ProgressPanel extends JPanel {
         ArrayList<WorkoutSession> newestFirst = sortNewestFirst(sessions);
         String normalizedName = normalizeName(exerciseName);
         for (WorkoutSession session : newestFirst) {
-            addSessionRow(session, normalizedName, sessionNumbers.get(session.getDate()));
+            addSessionRow(session, normalizedName,
+                    sessionNumbers.get(session.getSessionId()));
         }
     }
 
     private Map<String, Integer> getSessionNumbers(List<WorkoutSession> sessions) {
-        // Session numbers are calculated per date because the file has no display number.
+        // Number sessions per date in save order and associate each number with its session ID.
+        Map<String, Integer> dateCounts = new HashMap<>();
         Map<String, Integer> sessionNumbers = new HashMap<>();
+
         for (WorkoutSession session : sessions) {
-            int number = sessionNumbers.getOrDefault(session.getDate(), 0) + 1;
-            sessionNumbers.put(session.getDate(), number);
+            String date = session.getDate();
+            int number = dateCounts.getOrDefault(date, 0) + 1;
+            dateCounts.put(date, number);
+            sessionNumbers.put(session.getSessionId(), number);
         }
+
         return sessionNumbers;
     }
 
