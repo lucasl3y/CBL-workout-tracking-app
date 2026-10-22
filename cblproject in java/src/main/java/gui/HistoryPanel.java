@@ -132,22 +132,22 @@ public class HistoryPanel extends JPanel {
     }
 
     private MonthlySummary calculateMonthlySummary() {
-        // Future-dated sessions are kept in the calendar but excluded from completed totals.
+        // Include all saved sessions in the displayed month, including future dates.
         MonthlySummary summary = new MonthlySummary();
         for (WorkoutSession session : sessions) {
-            if (isCompletedWorkoutInCurrentMonth(session)) {
+            if (isWorkoutInCurrentMonth(session)) {
                 summary.add(session);
             }
         }
         return summary;
     }
 
-    private boolean isCompletedWorkoutInCurrentMonth(WorkoutSession session) {
+    private boolean isWorkoutInCurrentMonth(WorkoutSession session) {
         try {
             LocalDate date = LocalDate.parse(session.getDate());
-            return YearMonth.from(date).equals(currentMonth) && !date.isAfter(LocalDate.now());
+            return YearMonth.from(date).equals(currentMonth);
         } catch (DateTimeParseException ignored) {
-            // Invalid legacy dates remain visible in history but are excluded from monthly totals.
+            // Exclude records with invalid dates from monthly totals.
             return false;
         }
     }

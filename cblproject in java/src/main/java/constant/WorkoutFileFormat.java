@@ -2,7 +2,10 @@ package constant;
 
 public final class WorkoutFileFormat {
 
-    public static final String FILE_NAME = "workout_history.txt";
+    public static final String FILE_NAME = java.nio.file.Path.of(
+            System.getProperty("user.home"),
+            "workout_tracker_history.txt"
+    ).toString();
     public static final String SESSION_END = "============================";
     public static final String DATE_PREFIX = "=== Date: ";
     public static final String DATE_SUFFIX = " ===";
