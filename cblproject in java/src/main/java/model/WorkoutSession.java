@@ -56,7 +56,10 @@ public class WorkoutSession {
         exercises.add(set);
     }
 
+    /**
+     * Returns a copy of the exercise list to protect the session's internal collection.
+     */
     public ArrayList<ExerciseSet> getExercises() {
-        return exercises;
+        return new ArrayList<>(exercises);
     }
 }
