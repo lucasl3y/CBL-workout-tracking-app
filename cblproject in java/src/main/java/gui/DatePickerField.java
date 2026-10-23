@@ -18,7 +18,7 @@ import javax.swing.SwingUtilities;
 
 /**
  * Provides a read-only date field with a calendar dialog.
- * Selected dates are returned in ISO format (yyyy-MM-dd).
+ * Selected dates are returned in ISO format (yyyy-mm-dd).
  */
 public class DatePickerField extends JPanel {
 
@@ -90,8 +90,10 @@ public class DatePickerField extends JPanel {
 
         private void renderMonth() {
             // Rebuild the grid whenever the user changes month.
-            monthLabel.setText(displayedMonth.getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH)
-                    + " " + displayedMonth.getYear());
+            String monthName = displayedMonth.getMonth().getDisplayName(
+                    TextStyle.FULL, Locale.ENGLISH);
+            monthLabel.setText(monthName + " " + displayedMonth.getYear());
+            
             daysPanel.removeAll();
             String[] weekdays = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
             for (String weekday : weekdays) {
@@ -99,13 +101,16 @@ public class DatePickerField extends JPanel {
             }
 
             // Insert empty cells to align the first day with the Monday-first weekday header.
-            for (int blank = 1; blank < displayedMonth.atDay(1).getDayOfWeek().getValue(); blank++) {
+            int firstDayOfWeek = displayedMonth.atDay(1).getDayOfWeek().getValue();
+            for (int blank = 1; blank < firstDayOfWeek; blank++) {
                 daysPanel.add(new JLabel(""));
             }
+            
             for (int day = 1; day <= displayedMonth.lengthOfMonth(); day++) {
                 LocalDate date = displayedMonth.atDay(day);
                 JButton dayButton = new JButton(String.valueOf(day));
                 dayButton.setMargin(new java.awt.Insets(2, 5, 2, 5));
+                
                 if (date.equals(selectedDate)) {
                     dayButton.setBackground(new java.awt.Color(190, 220, 245));
                     dayButton.setOpaque(true);

@@ -19,8 +19,8 @@ import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import storage.FileStorage;
 import model.WorkoutSession;
+import storage.FileStorage;
 
 /**
  * Displays saved workout sessions in a monthly calendar with summary totals.
@@ -95,7 +95,8 @@ public class HistoryPanel extends JPanel {
             workoutDates.add(session.getDate());
         }
 
-        String monthName = displayedMonth.getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH);
+        String monthName = displayedMonth.getMonth().getDisplayName(
+                TextStyle.FULL, Locale.ENGLISH);
         monthLabel.setText(monthName + " " + displayedMonth.getYear());
         updateSummary();
 
@@ -134,8 +135,9 @@ public class HistoryPanel extends JPanel {
 
     private void updateSummary() {
         MonthlySummary summary = calculateMonthlySummary();
-        summaryLabel.setText("Workouts: " + summary.workouts + " | Training Days: "
-                + summary.trainingDays.size() + "  ·  Total Duration: " + summary.duration + " min");
+        summaryLabel.setText("Workouts: " + summary.workouts 
+                + " | Training Days: " + summary.trainingDays.size() 
+                + "  ·  Total Duration: " + summary.duration + " min");
     }
 
     private MonthlySummary calculateMonthlySummary() {
@@ -197,12 +199,17 @@ public class HistoryPanel extends JPanel {
         int index = java.util.Arrays.asList(choices).indexOf(selection);
         WorkoutSession selectedSession = dateSessions.get(index);
         String[] options = {"Close", "Delete This Session"};
-        int action = JOptionPane.showOptionDialog(this, detailsFor(selectedSession), "Workout on " + date,
-                JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
+        
+        int action = JOptionPane.showOptionDialog(this, detailsFor(selectedSession), 
+                "Workout on " + date, JOptionPane.YES_NO_OPTION, 
+                JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
+                
         if (action == 1) {
             int confirm = JOptionPane.showConfirmDialog(this,
                     "Delete only this workout session? This action cannot be undone.",
-                    "Confirm Deletion", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                    "Confirm Deletion", JOptionPane.YES_NO_OPTION, 
+                    JOptionPane.WARNING_MESSAGE);
+                    
             if (confirm == JOptionPane.YES_OPTION) {
 
                 // Delete by the persistent session ID to preserve other sessions on the same date.

@@ -1,11 +1,11 @@
 package storage;
 
+import constant.WorkoutFileFormat;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 import model.ExerciseSet;
 import model.WorkoutSession;
-import constant.WorkoutFileFormat;
 
 /** Converts workout sessions between the domain model and the text-file format. */
 final class WorkoutHistoryCodec {

@@ -1,5 +1,6 @@
 package storage;
 
+import constant.WorkoutFileFormat;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -13,8 +14,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-
-import constant.WorkoutFileFormat;
 import model.ExerciseSet;
 import model.WorkoutSession;
 
@@ -72,14 +71,21 @@ public class FileStorage {
         // Build a date-grouped text summary from the saved workout sessions.
         HashMap<String, StringBuilder> grouped = new HashMap<>();
         for (WorkoutSession session : loadSessions()) {
-            StringBuilder details = grouped.computeIfAbsent(session.getDate(), key -> new StringBuilder());
+            StringBuilder details = grouped.computeIfAbsent(
+                    session.getDate(), key -> new StringBuilder());
+            
             if (details.length() > 0) {
                 details.append("\n--- Additional Workout ---\n\n");
             }
-            details.append("Duration: ").append(session.getDuration()).append(" minutes\n");
-            if (session.getTrainedMuscles() != null && !session.getTrainedMuscles().isEmpty()) {
-                details.append("Trained Muscles: ").append(session.getTrainedMuscles()).append("\n");
+            details.append("Duration: ")
+                    .append(session.getDuration()).append(" minutes\n");
+                    
+            if (session.getTrainedMuscles() != null 
+                    && !session.getTrainedMuscles().isEmpty()) {
+                details.append("Trained Muscles: ")
+                        .append(session.getTrainedMuscles()).append("\n");
             }
+            
             double volume = 0.0;
             for (ExerciseSet set : session.getExercises()) {
                 details.append(set).append("\n");
@@ -157,7 +163,8 @@ public class FileStorage {
         Path absolutePath = path.toAbsolutePath();
 
         // Create the temporary file in the same directory as the original history file.
-        Path tempPath = Files.createTempFile(absolutePath.getParent(), "workout-history-", ".tmp");
+        Path tempPath = Files.createTempFile(
+                absolutePath.getParent(), "workout-history-", ".tmp");
         try {
             writeHistoryFile(tempPath, historyFile, excludedIndex);
             replaceHistoryFile(tempPath, absolutePath);

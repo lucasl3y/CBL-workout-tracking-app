@@ -45,7 +45,8 @@ public class ProgressPanel extends JPanel {
         selectorPanel.add(exerciseCombo);
         add(selectorPanel, BorderLayout.NORTH);
 
-        tableModel = new DefaultTableModel(new Object[] {"Date", "Session", "Sets", "Weight x Reps"}, 0) {
+        tableModel = new DefaultTableModel(
+                new Object[] {"Date", "Session", "Sets", "Weight x Reps"}, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
@@ -180,7 +181,8 @@ public class ProgressPanel extends JPanel {
             if (details.length() > 0) {
                 details.append("; ");
             }
-            details.append(String.format(Locale.US, "%.1f kg x %d", set.getWeight(), set.getReps()));
+            details.append(String.format(Locale.US, "%.1f kg x %d",
+                    set.getWeight(), set.getReps()));
         }
         return details.toString();
     }
